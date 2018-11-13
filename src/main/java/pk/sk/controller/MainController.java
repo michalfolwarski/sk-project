@@ -4,13 +4,15 @@ import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
-import javafx.stage.FileChooser;
 
 import java.awt.image.BufferedImage;
 import java.net.URL;
+import java.util.Random;
 import java.util.ResourceBundle;
 
 public class MainController implements Initializable {
@@ -21,15 +23,16 @@ public class MainController implements Initializable {
     private static final int PREF_HEIGHT = 500;
     private static final int WHITE_PIXEL = 0xFFFFFFFF;
     private static final int BLACK_PIXEL = 0xFF000000;
+    private static final int COOPERATORS_COLOR = 0xFFFF0000;
+    private static final int DEFECTORS_COLOR = 0xFF0000FF;
+    private static boolean isRunning = false;
 
-    private final FileChooser fileChooser = new FileChooser();
     public TextField initialPopulationField;
     public TextField defectorsField;
-    public TextField paramOneField;
     public TextField maxPopulationPerGroup;
-    public TextField paramTwoField;
     public TextField maxNumberOfGroupsField;
     public Button runButton;
+    public TextField delayField;
 
     @FXML
     private ImageView outputContainer;
@@ -46,15 +49,41 @@ public class MainController implements Initializable {
         height = outputImage.getHeight();
         pixels = outputImage.getRGB(0, 0, width, height, null, 0, width);
 
+        clearScene();
+        originalPixels = pixels.clone();
+
+        refreshImage();
+    }
+
+    private void clearScene() {
         for (int i = 0; i < pixels.length; ++i) {
             pixels[i] = WHITE_PIXEL;
         }
-        originalPixels = pixels.clone();
-
-        refreshInputImage();
     }
 
-    private void refreshInputImage() {
+    private void generateRandomPopulation() {
+        int length = pixels.length;
+
+        int population = Integer.parseInt(initialPopulationField.getText());
+        int defectors = Integer.parseInt(defectorsField.getText());
+
+        Random random = new Random();
+        for (int i = 0; i < defectors; i++) {
+            int index = random.nextInt(length);
+            pixels[index] = DEFECTORS_COLOR;
+        }
+
+        for (int i = 0; i < population - defectors; i++){
+            int index = random.nextInt(length);
+            if (pixels[index] != WHITE_PIXEL){
+                i--;
+            } else {
+                pixels[index] = COOPERATORS_COLOR;
+            }
+        }
+    }
+
+    private void refreshImage() {
         outputImage.setRGB(0, 0, width, height, pixels, 0, width);
         outputContainer.setImage(SwingFXUtils.toFXImage(outputImage, null));
     }
@@ -70,11 +99,11 @@ public class MainController implements Initializable {
             int x = (int) Math.floor(event.getX() / PREF_WIDTH * width);
             int y = (int) Math.floor(event.getY() / PREF_HEIGHT * height);
             if (MouseButton.PRIMARY.equals(event.getButton())) {
-                pixelClick(x, y, WHITE_PIXEL);
+                pixelClick(x, y, COOPERATORS_COLOR);
             } else if (MouseButton.SECONDARY.equals(event.getButton())) {
-                pixelClick(x, y, BLACK_PIXEL);
+                pixelClick(x, y, DEFECTORS_COLOR);
             }
-            refreshInputImage();
+            refreshImage();
         });
 
         createFieldListeners();
@@ -87,6 +116,9 @@ public class MainController implements Initializable {
         defectorsField.textProperty()
                 .addListener((observableValue, oldValue, newValue) ->
                         defectorsField.setText(filterNumber(newValue)));
+        delayField.textProperty()
+                .addListener((observableValue, oldValue, newValue) ->
+                        delayField.setText(filterNumber(newValue)));
         maxNumberOfGroupsField.textProperty()
                 .addListener((observableValue, oldValue, newValue) ->
                         maxNumberOfGroupsField.setText(filterNumber(newValue)));
@@ -124,7 +156,44 @@ public class MainController implements Initializable {
 
 
     public void run() {
+        if (!isInputValid()) {
+            return;
+        }
+        if (isRunning) {
+            runButton.setText("Run");
+            isRunning = false;
+        } else {
+            runButton.setText("Stop");
+            isRunning = true;
+            launchSimulation();
+        }
+    }
+
+    private void launchSimulation() {
+        clearScene();
+        generateRandomPopulation();
+        refreshImage();
+        animate();
+    }
+
+    private void animate() {
+        new Thread(() -> {
+            while (isRunning) {
+                nextStep();
+                refreshImage();
+                try {
+                    Thread.sleep(Integer.parseInt(delayField.getText()));
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+        }).start();
+    }
+
+    private void nextStep() {
         //TODO
+        System.out.println("next step");
+
     }
 
     private boolean isInputValid() {
@@ -143,22 +212,30 @@ public class MainController implements Initializable {
             errorMessage += "Empty field: 'Max population per group'!\n";
         }
 
+        if (delayField.getText() == null || delayField.getText().length() == 0){
+            errorMessage += "Empty field: 'Delay [ms]'!\n";
+        }
         if (errorMessage.length() == 0) {
             return true;
         } else {
-            alertError(errorMessage, "Invalid Fields");
+            alertError(errorMessage);
             return false;
         }
     }
 
-    private void alertError(String finalErrorMessage, String title) {
+    private void alertError(String finalErrorMessage) {
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.initOwner(runButton.getScene().getWindow());
-            alert.setTitle(title);
+            alert.setTitle("Invalid Fields");
             alert.setHeaderText("");
             alert.setContentText(finalErrorMessage);
             alert.showAndWait();
         });
+    }
+
+
+    public static void quit() {
+        isRunning = false;
     }
 }

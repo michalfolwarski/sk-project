@@ -30,4 +30,9 @@ public class App extends Application {
 
         mainController.createInputImage();
     }
+
+    @Override
+    public void stop() throws Exception {
+        MainController.quit();
+    }
 }

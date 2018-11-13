@@ -25,16 +25,16 @@
         </rowConstraints>
         <Label text="Initial population"/>
         <Label text="Defectors" GridPane.rowIndex="1"/>
-        <Label text="Param1" GridPane.rowIndex="2"/>
+        <Label text="Delay [ms]" GridPane.rowIndex="2"/>
         <Label text="Max number of groups" GridPane.columnIndex="3"/>
         <Label text="Max population per group" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
-        <Label text="Param2" GridPane.columnIndex="3" GridPane.rowIndex="2"/>
+        <!--<Label text="Param2" GridPane.columnIndex="3" GridPane.rowIndex="2"/>-->
         <TextField fx:id="initialPopulationField" text="10000" GridPane.columnIndex="1"/>
         <TextField fx:id="defectorsField" text="1000" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-        <TextField fx:id="paramOneField" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+        <TextField fx:id="delayField" text="100" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
         <TextField fx:id="maxNumberOfGroupsField" text="10" GridPane.columnIndex="4"/>
         <TextField fx:id="maxPopulationPerGroup" text="3000" GridPane.columnIndex="4" GridPane.rowIndex="1"/>
-        <TextField fx:id="paramTwoField" text="1" GridPane.columnIndex="4" GridPane.rowIndex="2"/>
+        <!--<TextField fx:id="paramTwoField" text="1" GridPane.columnIndex="4" GridPane.rowIndex="2"/>-->
 
         <Button fx:id="runButton" mnemonicParsing="false" onAction="#run" text="Run" GridPane.columnIndex="4"
                 GridPane.rowIndex="4" GridPane.halignment="RIGHT"/>
