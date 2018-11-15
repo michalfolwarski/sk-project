@@ -9,12 +9,13 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import pk.sk.model.Individual;
+import pk.sk.model.IndividualType;
 
 import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.util.*;
 
-public class MainController implements Initializable {
+public class MainController2 implements Initializable {
     private static final int WIDTH = 100;
     private static final int HEIGHT = 100;
 
@@ -66,32 +67,108 @@ public class MainController implements Initializable {
     }
 
     private void generateRandomLeaders() {
-        //todo
+        int maxNumberOfGroups = Integer.parseInt(maxNumberOfGroupsField.getText());
+        int min = Math.max(maxNumberOfGroups / 2, 3);
+        int numberOfGroups = min + random.nextInt(maxNumberOfGroups - min + 1);
+
+        for (int group = 0; group < numberOfGroups; group++) {
+            int index = random.nextInt(WIDTH * HEIGHT);
+            if (individuals.get(index).isPresent()) {
+                group--;
+            } else {
+                Individual newIndividual = new Individual(group);
+                individuals.set(index, Optional.of(newIndividual));
+                colorsOfGroup.put(group, getRandomColor());
+            }
+        }
+
     }
 
     private void generateRandomPopulation() {
         int length = pixels.length;
+        int population = getInitialPopulation();
+        int defectors = Integer.parseInt(defectorsField.getText()) * getInitialPopulation() / 100;
 
-        int population = Integer.parseInt(initialPopulationField.getText());
-        int defectors = Integer.parseInt(defectorsField.getText());
-
-        Random random = new Random();
         for (int i = 0; i < defectors; i++) {
             int index = random.nextInt(length);
-            pixels[index] = DEFECTORS_PIXEL;
-        }
-
-        for (int i = 0; i < population - defectors; i++){
-            int index = random.nextInt(length);
-            if (pixels[index] != DEFAULT_PIXEL){
+            if (individuals.get(index).isPresent()) {
                 i--;
             } else {
-                pixels[index] = COOPERATORS_PIXEL;
+                individuals.set(index, Optional.of(new Individual(IndividualType.DEFECTOR)));
+            }
+        }
+
+        for (int i = 0; i < population - defectors; i++) {
+            int index = random.nextInt(length);
+            if (individuals.get(index).isPresent()) {
+                i--;
+            } else {
+                individuals.set(index, Optional.of(new Individual(IndividualType.COOPERATOR)));
+            }
+        }
+    }
+
+    private int getInitialPopulation() {
+        return Integer.parseInt(initialPopulationField.getText()) * getMaxPopulation() / 100;
+    }
+
+    private int getRandomColor() {
+        int alpha = 0xFF;
+        int range = 160;
+        int min = (255 - range) / 5 * 4;
+        int red = random.nextInt(range) + min;
+        int green = random.nextInt(range) + min;
+        int blue = random.nextInt(range) + min;
+
+        return (blue) | (green << 8) |
+                (red << 16) | (alpha << 24);
+    }
+
+    private int getMaxPopulation() {
+        return Integer.parseInt(maxNumberOfGroupsField.getText()) * Integer.parseInt(maxPopulationPerGroup.getText());
+    }
+
+    private void markGroupArea(int index) {
+        int group = individuals.get(index).get().getGroup();
+        int color = colorsOfGroup.get(group);
+
+        int xCord = index % width;
+        int yCord = index / height;
+
+        for (int i = -1; i <= 1 ; i++) {
+            for (int j = -1; j <= 1; j++) {
+
+                int y = yCord + i;
+                int x = xCord + j;
+                int position = y * width + x;
+                if (y < 0 || x < 0 || y >= height|| x >= width
+                        || position == index || position < 0 || position > pixels.length){
+                    continue;
+                }
+                if (!individuals.get(position).isPresent()) {
+                    pixels[position] = color;
+                }
             }
         }
     }
 
     private void refreshImage() {
+        for (int i = 0; i < pixels.length; i++) {
+            if (individuals.get(i).isPresent()) {
+                IndividualType type = individuals.get(i).get().getType();
+                if (IndividualType.COOPERATOR.equals(type)) {
+                    pixels[i] = COOPERATORS_PIXEL;
+                } else {
+                    pixels[i] = DEFECTORS_PIXEL;
+                }
+            } else {
+                pixels[i] = DEFAULT_PIXEL;
+            }
+        }
+        for (int i = 0; i < pixels.length; i++) {
+            int finalI = i;
+            individuals.get(i).ifPresent(ind -> markGroupArea(finalI));
+        }
         outputImage.setRGB(0, 0, width, height, pixels, 0, width);
         outputContainer.setImage(SwingFXUtils.toFXImage(outputImage, null));
     }
