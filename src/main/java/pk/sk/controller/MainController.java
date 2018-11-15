@@ -6,6 +6,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import pk.sk.model.Individual;
@@ -33,6 +34,7 @@ public class MainController implements Initializable {
     public Button runButton;
     public TextField delayField;
     public TextField probabilityOfSplittingGroupField;
+    public Label statusBar;
 
     @FXML
     private ImageView outputContainer;
@@ -140,7 +142,7 @@ public class MainController implements Initializable {
             Set<Integer> neighboursGroup = neighbours.stream()
                     .map(Individual::getGroup)
                     .collect(Collectors.toSet());
-            if (neighbours.size() > getMaxPopulationPerGroup() || neighboursGroup.size() != 1) {
+            if (neighbours.size() >= getMaxPopulationPerGroup() || neighboursGroup.size() != 1) {
                 i--;
                 continue;
             }
@@ -326,6 +328,7 @@ public class MainController implements Initializable {
             while (isRunning) {
                 nextStep();
                 refreshImage();
+                updateStatusBar();
                 try {
                     int sleepTime = Integer.parseInt(delayField.getText());
                     Thread.sleep(sleepTime);
@@ -336,10 +339,29 @@ public class MainController implements Initializable {
         }).start();
     }
 
+    private void updateStatusBar() {
+        long cooperators = countIndividuals(IndividualType.COOPERATOR);
+        long defectors = countIndividuals(IndividualType.DEFECTOR);
+        long total = cooperators + defectors;
+
+        String statusMessage = String.format("Total Population: %-5d Cooperators: %-5d Defectors: %-5d",
+                total, cooperators, defectors);
+        System.out.println(statusMessage); //todo rem
+        Platform.runLater(() -> statusBar.setText(statusMessage));
+    }
+
+    private long countIndividuals(IndividualType cooperator) {
+        return individuals.stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(Individual::getType)
+                .filter(type -> type.equals(cooperator))
+                .count();
+    }
+
     private void nextStep() {
         //TODO
         System.out.println("next step");
-
     }
 
     private boolean isInputValid() {
