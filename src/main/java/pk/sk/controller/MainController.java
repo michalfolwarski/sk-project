@@ -24,6 +24,9 @@ public class MainController implements Initializable {
     private static final int DEFAULT_PIXEL = 0x00000000; // transparent black
     private static final int COOPERATORS_PIXEL = 0xFFFFFFFF; // white
     private static final int DEFECTORS_PIXEL = 0xFF000000; // black
+    private static final int LEADERS_RANGE = 3;
+    private static final int INDIVIDUAL_RANGE = 2;
+    private static final int GROUP_MARK_RANGE = 1;
 
     private static boolean isRunning = false;
 
@@ -58,6 +61,7 @@ public class MainController implements Initializable {
         pixels = outputImage.getRGB(0, 0, WIDTH, HEIGHT, null, 0, WIDTH);
 
         refreshImage();
+        updateStatusBar();
     }
 
     private void cleanUp() {
@@ -81,13 +85,14 @@ public class MainController implements Initializable {
 
     private void generateRandomGroupLeaders(int numberOfGroups) {
         for (int group = 0; group < numberOfGroups; group++) {
-            int index = random.nextInt(WIDTH * HEIGHT);
+            int position = random.nextInt(WIDTH * HEIGHT);
 
-            if (individuals.get(index).isPresent() || !getNearestNeighboursIn(index, 3).isEmpty()) {
+            if (individuals.get(position).isPresent()
+                    || !getNearestNeighboursIn(position, LEADERS_RANGE).isEmpty()) {
                 group--;
             } else {
                 Individual newIndividual = new Individual(group);
-                individuals.set(index, Optional.of(newIndividual));
+                individuals.set(position, Optional.of(newIndividual));
                 colorsOfGroup.put(group, getRandomColor());
             }
         }
@@ -95,7 +100,7 @@ public class MainController implements Initializable {
 
     private void generateRandomPopulation() {
         int defectors = Integer.parseInt(defectorsField.getText()) * getInitialPopulation() / 100;
-        int population = getInitialPopulation() - getDistinctGroup().size();
+        int population = getInitialPopulation() - countGroups();
 
         generateRandomCooperators(population);
         chooseRandomDefectors(defectors);
@@ -122,12 +127,12 @@ public class MainController implements Initializable {
                 .collect(Collectors.toList());
     }
 
-    private Set<Integer> getDistinctGroup() {
+    private int countGroups() {
         return individuals.stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .map(Individual::getGroup)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toSet()).size();
     }
 
     private void generateRandomCooperators(int population) {
@@ -138,7 +143,7 @@ public class MainController implements Initializable {
                 i--;
                 continue;
             }
-            List<Individual> neighbours = getNearestNeighboursIn(position, 2);
+            List<Individual> neighbours = getNearestNeighboursIn(position, INDIVIDUAL_RANGE);
             Set<Integer> neighboursGroup = neighbours.stream()
                     .map(Individual::getGroup)
                     .collect(Collectors.toSet());
@@ -187,7 +192,7 @@ public class MainController implements Initializable {
         int group = individuals.get(index).get().getGroup();
         int color = colorsOfGroup.get(group);
 
-        getNeighboursPosition(index, 1)
+        getNeighboursPosition(index, GROUP_MARK_RANGE)
                 .forEach(position -> {
                     if (!individuals.get(position).isPresent()) {
                         pixels[position] = color;
@@ -343,9 +348,12 @@ public class MainController implements Initializable {
         long cooperators = countIndividuals(IndividualType.COOPERATOR);
         long defectors = countIndividuals(IndividualType.DEFECTOR);
         long total = cooperators + defectors;
+        int groups = countGroups();
 
-        String statusMessage = String.format("Total Population: %-5d Cooperators: %-5d Defectors: %-5d",
-                total, cooperators, defectors);
+        String statusMessage =
+                String.format("Total Population: %-5d Cooperators: %-5d Defectors: %-5d Groups: %-5d",
+                total, cooperators, defectors, groups);
+
         System.out.println(statusMessage); //todo rem
         Platform.runLater(() -> statusBar.setText(statusMessage));
     }
@@ -365,6 +373,7 @@ public class MainController implements Initializable {
     }
 
     private boolean isInputValid() {
+        //todo add constraint for values
         String errorMessage = "";
 
         if (initialPopulationField.getText() == null || initialPopulationField.getText().length() == 0) {

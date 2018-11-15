@@ -45,6 +45,6 @@
         <Button fx:id="runButton" mnemonicParsing="false" onAction="#run" text="Run" GridPane.columnIndex="3" GridPane.columnSpan="2" GridPane.halignment="RIGHT" GridPane.rowIndex="4" />
 
         <ImageView fx:id="outputContainer" preserveRatio="true" style="-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 10, 0, 0, 0);" GridPane.columnSpan="5" GridPane.halignment="CENTER" GridPane.rowIndex="6" />
-        <Label fx:id="statusBar"  text="Total Population: 0, Cooperators: 0, Defectors: 0" GridPane.columnSpan="5" GridPane.rowIndex="8"/>
+        <Label fx:id="statusBar" GridPane.columnSpan="5" GridPane.rowIndex="8"/>
     </GridPane>
 </AnchorPane>
