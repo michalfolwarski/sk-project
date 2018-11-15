@@ -15,7 +15,7 @@ import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.util.*;
 
-public class MainController2 implements Initializable {
+public class MainController implements Initializable {
     private static final int WIDTH = 100;
     private static final int HEIGHT = 100;
 
@@ -31,6 +31,7 @@ public class MainController2 implements Initializable {
     public TextField maxNumberOfGroupsField;
     public Button runButton;
     public TextField delayField;
+    public TextField probabilityOfSplittingGroupField;
 
     @FXML
     private ImageView outputContainer;
@@ -281,6 +282,9 @@ public class MainController2 implements Initializable {
 
         if (delayField.getText() == null || delayField.getText().length() == 0) {
             errorMessage += "Empty field: 'Delay [ms]'!\n";
+        }
+        if (probabilityOfSplittingGroupField.getText() == null || probabilityOfSplittingGroupField.getText().length() == 0) {
+            errorMessage += "Empty field: 'Probability of split the group [‰]'!\n";
         }
         if (errorMessage.length() == 0) {
             return true;
