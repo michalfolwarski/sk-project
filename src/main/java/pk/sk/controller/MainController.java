@@ -75,7 +75,7 @@ public class MainController implements Initializable {
 
         for (int group = 0; group < numberOfGroups; group++) {
             int index = random.nextInt(WIDTH * HEIGHT);
-            if (individuals.get(index).isPresent()) {
+            if (individuals.get(index).isPresent() || !getNearestNeighboursIn(index,3).isEmpty()) {
                 group--;
             } else {
                 Individual newIndividual = new Individual(group);
@@ -124,11 +124,11 @@ public class MainController implements Initializable {
                 i--;
                 continue;
             }
-            List<Individual> neighbours = getNearestNeighboursIn(position);
+            List<Individual> neighbours = getNearestNeighboursIn(position, 2);
             Set<Integer> neighboursGroup = neighbours.stream()
                     .map(Individual::getGroup)
                     .collect(Collectors.toSet());
-            if (neighboursGroup.size() != 1){
+            if (neighbours.size() > getMaxPopulationPerGroup() || neighboursGroup.size() != 1){
                 i--;
                 continue;
             }
@@ -137,9 +137,9 @@ public class MainController implements Initializable {
         }
     }
 
-    private List<Individual> getNearestNeighboursIn(int position) {
+    private List<Individual> getNearestNeighboursIn(int position, int range) {
         List<Individual> neighbours = new ArrayList<>();
-        getNeighboursPosition(position)
+        getNeighboursPosition(position, range)
                 .forEach(coordinates -> {
                     individuals.get(coordinates).ifPresent(neighbours::add);
                 });
@@ -163,14 +163,18 @@ public class MainController implements Initializable {
     }
 
     private int getMaxPopulation() {
-        return Integer.parseInt(maxNumberOfGroupsField.getText()) * Integer.parseInt(maxPopulationPerGroup.getText());
+        return Integer.parseInt(maxNumberOfGroupsField.getText()) * getMaxPopulationPerGroup();
+    }
+
+    private int getMaxPopulationPerGroup() {
+        return Integer.parseInt(maxPopulationPerGroup.getText());
     }
 
     private void markGroupArea(int index) {
         int group = individuals.get(index).get().getGroup();
         int color = colorsOfGroup.get(group);
 
-        getNeighboursPosition(index)
+        getNeighboursPosition(index, 1)
                 .forEach(position -> {
                     if (!individuals.get(position).isPresent()) {
                         pixels[position] = color;
@@ -178,13 +182,13 @@ public class MainController implements Initializable {
                 });
     }
 
-    private List<Integer> getNeighboursPosition(int index) {
+    private List<Integer> getNeighboursPosition(int index, int range) {
         List<Integer> positionList = new ArrayList<>();
         int xCord = index % width;
         int yCord = index / height;
 
-        for (int i = -1; i <= 1; i++) {
-            for (int j = -1; j <= 1; j++) {
+        for (int i = -range; i <= range; i++) {
+            for (int j = -range; j <= range; j++) {
 
                 int y = yCord + i;
                 int x = xCord + j;
