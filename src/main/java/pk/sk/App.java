@@ -28,7 +28,7 @@ public class App extends Application {
         stage.setMinHeight(690);
         stage.show();
 
-        mainController.createInputImage();
+        mainController.createOutputImage();
     }
 
     @Override

@@ -8,23 +8,20 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseButton;
+import pk.sk.model.Individual;
 
 import java.awt.image.BufferedImage;
 import java.net.URL;
-import java.util.Random;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public class MainController implements Initializable {
-    private static final int WIDTH = 200;
-    private static final int HEIGHT = 200;
+    private static final int WIDTH = 100;
+    private static final int HEIGHT = 100;
 
-    private static final int PREF_WIDTH = 500;
-    private static final int PREF_HEIGHT = 500;
-    private static final int WHITE_PIXEL = 0xFFFFFFFF;
-    private static final int BLACK_PIXEL = 0xFF000000;
-    private static final int COOPERATORS_COLOR = 0xFFFF0000;
-    private static final int DEFECTORS_COLOR = 0xFF0000FF;
+    private static final int DEFAULT_PIXEL = 0x00000000; // transparent black
+    private static final int COOPERATORS_PIXEL = 0xFFFFFFFF; // white
+    private static final int DEFECTORS_PIXEL = 0xFF000000; // black
+
     private static boolean isRunning = false;
 
     public TextField initialPopulationField;
@@ -38,27 +35,38 @@ public class MainController implements Initializable {
     private ImageView outputContainer;
     private BufferedImage outputImage;
     private int[] originalPixels = new int[]{};
+    private List<Optional<Individual>> individuals = new ArrayList<>();
     private int[] pixels = new int[]{};
     private int width;
     private int height;
+    private Random random = new Random();
+    private HashMap<Integer, Integer> colorsOfGroup = new HashMap<>();
 
-    public void createInputImage() {
-        outputImage = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_3BYTE_BGR);
+    public void createOutputImage() {
+        outputImage = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_4BYTE_ABGR);
 
         width = outputImage.getWidth();
         height = outputImage.getHeight();
-        pixels = outputImage.getRGB(0, 0, width, height, null, 0, width);
+        pixels = outputImage.getRGB(0, 0, WIDTH, HEIGHT, null, 0, WIDTH);
 
-        clearScene();
         originalPixels = pixels.clone();
 
         refreshImage();
     }
 
-    private void clearScene() {
-        for (int i = 0; i < pixels.length; ++i) {
-            pixels[i] = WHITE_PIXEL;
-        }
+    private void cleanUp() {
+        individuals.clear();
+        individuals.addAll(Collections.nCopies(HEIGHT * WIDTH, Optional.empty()));
+    }
+
+    private void setupOutputContainer() {
+        outputContainer.setPreserveRatio(true);
+        outputContainer.setFitHeight(500);
+        outputContainer.setSmooth(true);
+    }
+
+    private void generateRandomLeaders() {
+        //todo
     }
 
     private void generateRandomPopulation() {
@@ -70,15 +78,15 @@ public class MainController implements Initializable {
         Random random = new Random();
         for (int i = 0; i < defectors; i++) {
             int index = random.nextInt(length);
-            pixels[index] = DEFECTORS_COLOR;
+            pixels[index] = DEFECTORS_PIXEL;
         }
 
         for (int i = 0; i < population - defectors; i++){
             int index = random.nextInt(length);
-            if (pixels[index] != WHITE_PIXEL){
+            if (pixels[index] != DEFAULT_PIXEL){
                 i--;
             } else {
-                pixels[index] = COOPERATORS_COLOR;
+                pixels[index] = COOPERATORS_PIXEL;
             }
         }
     }
@@ -90,23 +98,9 @@ public class MainController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        outputContainer.setPreserveRatio(true);
-        outputContainer.setFitHeight(500);
-        outputContainer.setSmooth(true);
-
-        outputContainer.requestFocus();
-        outputContainer.setOnMouseClicked(event -> {
-            int x = (int) Math.floor(event.getX() / PREF_WIDTH * width);
-            int y = (int) Math.floor(event.getY() / PREF_HEIGHT * height);
-            if (MouseButton.PRIMARY.equals(event.getButton())) {
-                pixelClick(x, y, COOPERATORS_COLOR);
-            } else if (MouseButton.SECONDARY.equals(event.getButton())) {
-                pixelClick(x, y, DEFECTORS_COLOR);
-            }
-            refreshImage();
-        });
-
+        setupOutputContainer();
         createFieldListeners();
+        cleanUp();
     }
 
     private void createFieldListeners() {
@@ -149,18 +143,12 @@ public class MainController implements Initializable {
         return "";
     }
 
-
-    private void pixelClick(int x, int y, int color) {
-        pixels[x + y * width] = color;
-    }
-
-
     public void run() {
         if (!isInputValid()) {
             return;
         }
         if (isRunning) {
-            runButton.setText("Run");
+            runButton.setText("Reset & Run");
             isRunning = false;
         } else {
             runButton.setText("Stop");
@@ -170,19 +158,21 @@ public class MainController implements Initializable {
     }
 
     private void launchSimulation() {
-        clearScene();
+        cleanUp();
+        generateRandomLeaders();
         generateRandomPopulation();
         refreshImage();
-        animate();
+        startAnimation();
     }
 
-    private void animate() {
+    private void startAnimation() {
         new Thread(() -> {
             while (isRunning) {
                 nextStep();
                 refreshImage();
                 try {
-                    Thread.sleep(Integer.parseInt(delayField.getText()));
+                    int sleepTime = Integer.parseInt(delayField.getText());
+                    Thread.sleep(sleepTime);
                 } catch (InterruptedException e) {
                     break;
                 }
@@ -212,7 +202,7 @@ public class MainController implements Initializable {
             errorMessage += "Empty field: 'Max population per group'!\n";
         }
 
-        if (delayField.getText() == null || delayField.getText().length() == 0){
+        if (delayField.getText() == null || delayField.getText().length() == 0) {
             errorMessage += "Empty field: 'Delay [ms]'!\n";
         }
         if (errorMessage.length() == 0) {
@@ -233,7 +223,6 @@ public class MainController implements Initializable {
             alert.showAndWait();
         });
     }
-
 
     public static void quit() {
         isRunning = false;
