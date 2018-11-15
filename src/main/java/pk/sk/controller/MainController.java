@@ -37,7 +37,6 @@ public class MainController implements Initializable {
     @FXML
     private ImageView outputContainer;
     private BufferedImage outputImage;
-    private int[] originalPixels = new int[]{};
     private List<Optional<Individual>> individuals = new ArrayList<>();
     private int[] pixels = new int[]{};
     private int width;
@@ -45,14 +44,16 @@ public class MainController implements Initializable {
     private Random random = new Random();
     private HashMap<Integer, Integer> colorsOfGroup = new HashMap<>();
 
+    public static void quit() {
+        isRunning = false;
+    }
+
     public void createOutputImage() {
         outputImage = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_4BYTE_ABGR);
 
         width = outputImage.getWidth();
         height = outputImage.getHeight();
         pixels = outputImage.getRGB(0, 0, WIDTH, HEIGHT, null, 0, WIDTH);
-
-        originalPixels = pixels.clone();
 
         refreshImage();
     }
@@ -73,9 +74,14 @@ public class MainController implements Initializable {
         int min = Math.max(maxNumberOfGroups / 2, 3);
         int numberOfGroups = min + random.nextInt(maxNumberOfGroups - min + 1);
 
+        generateRandomGroupLeaders(numberOfGroups);
+    }
+
+    private void generateRandomGroupLeaders(int numberOfGroups) {
         for (int group = 0; group < numberOfGroups; group++) {
             int index = random.nextInt(WIDTH * HEIGHT);
-            if (individuals.get(index).isPresent() || !getNearestNeighboursIn(index,3).isEmpty()) {
+
+            if (individuals.get(index).isPresent() || !getNearestNeighboursIn(index, 3).isEmpty()) {
                 group--;
             } else {
                 Individual newIndividual = new Individual(group);
@@ -88,19 +94,18 @@ public class MainController implements Initializable {
     private void generateRandomPopulation() {
         int defectors = Integer.parseInt(defectorsField.getText()) * getInitialPopulation() / 100;
         int population = getInitialPopulation() - getDistinctGroup().size();
+
         generateRandomCooperators(population);
         chooseRandomDefectors(defectors);
     }
 
     private void chooseRandomDefectors(int defectors) {
-        List<Individual> individualList = individuals.stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
+        List<Individual> individualList = getIndividualsList();
         for (int i = 0; i < defectors; i++) {
             int position = random.nextInt(individualList.size());
             Individual randomIndividual = individualList.get(position);
-            if (IndividualType.COOPERATOR.equals(randomIndividual.getType())){
+
+            if (IndividualType.COOPERATOR.equals(randomIndividual.getType())) {
                 randomIndividual.setType(IndividualType.DEFECTOR);
             } else {
                 i--;
@@ -108,8 +113,15 @@ public class MainController implements Initializable {
         }
     }
 
+    private List<Individual> getIndividualsList() {
+        return individuals.stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+    }
+
     private Set<Integer> getDistinctGroup() {
-        return  individuals.stream()
+        return individuals.stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .map(Individual::getGroup)
@@ -128,11 +140,10 @@ public class MainController implements Initializable {
             Set<Integer> neighboursGroup = neighbours.stream()
                     .map(Individual::getGroup)
                     .collect(Collectors.toSet());
-            if (neighbours.size() > getMaxPopulationPerGroup() || neighboursGroup.size() != 1){
+            if (neighbours.size() > getMaxPopulationPerGroup() || neighboursGroup.size() != 1) {
                 i--;
                 continue;
             }
-
             individuals.set(position, Optional.of(new Individual(neighbours.get(0).getGroup())));
         }
     }
@@ -153,13 +164,13 @@ public class MainController implements Initializable {
     private int getRandomColor() {
         int alpha = 0xFF;
         int range = 160;
-        int min = (255 - range) / 5 * 4;
-        int red = random.nextInt(range) + min;
-        int green = random.nextInt(range) + min;
-        int blue = random.nextInt(range) + min;
+        int minimumValue = (255 - range) / 5 * 4;
 
-        return (blue) | (green << 8) |
-                (red << 16) | (alpha << 24);
+        int red = random.nextInt(range) + minimumValue;
+        int green = random.nextInt(range) + minimumValue;
+        int blue = random.nextInt(range) + minimumValue;
+
+        return (blue) | (green << 8) | (red << 16) | (alpha << 24);
     }
 
     private int getMaxPopulation() {
@@ -194,17 +205,37 @@ public class MainController implements Initializable {
                 int x = xCord + j;
                 int position = y * width + x;
                 if (y < 0 || x < 0 || y >= height || x >= width
-                        || position == index || position < 0 || position > pixels.length) {
+                        || position == index || position < 0 || position > WIDTH * HEIGHT) {
                     continue;
                 }
-               positionList.add(position);
+                positionList.add(position);
             }
         }
         return positionList;
     }
 
     private void refreshImage() {
-        for (int i = 0; i < pixels.length; i++) {
+        updatePixelValues();
+        outputImage.setRGB(0, 0, width, height, pixels, 0, width);
+        outputContainer.setImage(SwingFXUtils.toFXImage(outputImage, null));
+    }
+
+    private void updatePixelValues() {
+        markIndividuals();
+        markGroups();
+    }
+
+    private void markGroups() {
+        int length = WIDTH * HEIGHT;
+        for (int i = 0; i < length; i++) {
+            int finalI = i;
+            individuals.get(i).ifPresent(ind -> markGroupArea(finalI));
+        }
+    }
+
+    private void markIndividuals() {
+        int length = WIDTH * HEIGHT;
+        for (int i = 0; i < length; i++) {
             if (individuals.get(i).isPresent()) {
                 IndividualType type = individuals.get(i).get().getType();
                 if (IndividualType.COOPERATOR.equals(type)) {
@@ -216,12 +247,6 @@ public class MainController implements Initializable {
                 pixels[i] = DEFAULT_PIXEL;
             }
         }
-        for (int i = 0; i < pixels.length; i++) {
-            int finalI = i;
-            individuals.get(i).ifPresent(ind -> markGroupArea(finalI));
-        }
-        outputImage.setRGB(0, 0, width, height, pixels, 0, width);
-        outputContainer.setImage(SwingFXUtils.toFXImage(outputImage, null));
     }
 
     @Override
@@ -356,9 +381,5 @@ public class MainController implements Initializable {
             alert.setContentText(finalErrorMessage);
             alert.showAndWait();
         });
-    }
-
-    public static void quit() {
-        isRunning = false;
     }
 }
