@@ -24,7 +24,7 @@ public class App extends Application {
 
         stage.setTitle("SK Project - Group Selection");
         stage.setScene(scene);
-        stage.setMinWidth(530);
+        stage.setMinWidth(600);
         stage.setMinHeight(690);
         stage.show();
 

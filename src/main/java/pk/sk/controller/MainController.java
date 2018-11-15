@@ -14,6 +14,7 @@ import pk.sk.model.IndividualType;
 import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class MainController implements Initializable {
     private static final int WIDTH = 100;
@@ -67,7 +68,7 @@ public class MainController implements Initializable {
         outputContainer.setSmooth(true);
     }
 
-    private void generateRandomLeaders() {
+    private void generateRandomGroups() {
         int maxNumberOfGroups = Integer.parseInt(maxNumberOfGroupsField.getText());
         int min = Math.max(maxNumberOfGroups / 2, 3);
         int numberOfGroups = min + random.nextInt(maxNumberOfGroups - min + 1);
@@ -82,31 +83,67 @@ public class MainController implements Initializable {
                 colorsOfGroup.put(group, getRandomColor());
             }
         }
-
     }
 
     private void generateRandomPopulation() {
-        int length = pixels.length;
-        int population = getInitialPopulation();
         int defectors = Integer.parseInt(defectorsField.getText()) * getInitialPopulation() / 100;
+        int population = getInitialPopulation() - getDistinctGroup().size();
+        generateRandomCooperators(population);
+        chooseRandomDefectors(defectors);
+    }
 
+    private void chooseRandomDefectors(int defectors) {
+        List<Individual> individualList = individuals.stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
         for (int i = 0; i < defectors; i++) {
-            int index = random.nextInt(length);
-            if (individuals.get(index).isPresent()) {
-                i--;
+            int position = random.nextInt(individualList.size());
+            Individual randomIndividual = individualList.get(position);
+            if (IndividualType.COOPERATOR.equals(randomIndividual.getType())){
+                randomIndividual.setType(IndividualType.DEFECTOR);
             } else {
-                individuals.set(index, Optional.of(new Individual(IndividualType.DEFECTOR)));
+                i--;
             }
         }
+    }
 
-        for (int i = 0; i < population - defectors; i++) {
-            int index = random.nextInt(length);
-            if (individuals.get(index).isPresent()) {
+    private Set<Integer> getDistinctGroup() {
+        return  individuals.stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(Individual::getGroup)
+                .collect(Collectors.toSet());
+    }
+
+    private void generateRandomCooperators(int population) {
+        int length = WIDTH * HEIGHT;
+        for (int i = 0; i < population; i++) {
+            int position = random.nextInt(length);
+            if (individuals.get(position).isPresent()) {
                 i--;
-            } else {
-                individuals.set(index, Optional.of(new Individual(IndividualType.COOPERATOR)));
+                continue;
             }
+            List<Individual> neighbours = getNearestNeighboursIn(position);
+            Set<Integer> neighboursGroup = neighbours.stream()
+                    .map(Individual::getGroup)
+                    .collect(Collectors.toSet());
+            if (neighboursGroup.size() != 1){
+                i--;
+                continue;
+            }
+
+            individuals.set(position, Optional.of(new Individual(neighbours.get(0).getGroup())));
         }
+    }
+
+    private List<Individual> getNearestNeighboursIn(int position) {
+        List<Individual> neighbours = new ArrayList<>();
+        getNeighboursPosition(position)
+                .forEach(coordinates -> {
+                    individuals.get(coordinates).ifPresent(neighbours::add);
+                });
+        return neighbours;
     }
 
     private int getInitialPopulation() {
@@ -133,24 +170,33 @@ public class MainController implements Initializable {
         int group = individuals.get(index).get().getGroup();
         int color = colorsOfGroup.get(group);
 
+        getNeighboursPosition(index)
+                .forEach(position -> {
+                    if (!individuals.get(position).isPresent()) {
+                        pixels[position] = color;
+                    }
+                });
+    }
+
+    private List<Integer> getNeighboursPosition(int index) {
+        List<Integer> positionList = new ArrayList<>();
         int xCord = index % width;
         int yCord = index / height;
 
-        for (int i = -1; i <= 1 ; i++) {
+        for (int i = -1; i <= 1; i++) {
             for (int j = -1; j <= 1; j++) {
 
                 int y = yCord + i;
                 int x = xCord + j;
                 int position = y * width + x;
-                if (y < 0 || x < 0 || y >= height|| x >= width
-                        || position == index || position < 0 || position > pixels.length){
+                if (y < 0 || x < 0 || y >= height || x >= width
+                        || position == index || position < 0 || position > pixels.length) {
                     continue;
                 }
-                if (!individuals.get(position).isPresent()) {
-                    pixels[position] = color;
-                }
+               positionList.add(position);
             }
         }
+        return positionList;
     }
 
     private void refreshImage() {
@@ -197,6 +243,9 @@ public class MainController implements Initializable {
         maxPopulationPerGroup.textProperty()
                 .addListener((observableValue, oldValue, newValue) ->
                         maxPopulationPerGroup.setText(filterNumber(newValue)));
+        probabilityOfSplittingGroupField.textProperty()
+                .addListener((observableValue, oldValue, newValue) ->
+                        probabilityOfSplittingGroupField.setText(filterNumber(newValue)));
     }
 
     private String filterNumber(String value) {
@@ -237,7 +286,7 @@ public class MainController implements Initializable {
 
     private void launchSimulation() {
         cleanUp();
-        generateRandomLeaders();
+        generateRandomGroups();
         generateRandomPopulation();
         refreshImage();
         startAnimation();
