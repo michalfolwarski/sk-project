@@ -415,7 +415,44 @@ public class MainController implements Initializable {
     }
 
     private void tryToSplitGroup(Integer groupNo) {
-        //todo check probability, split group and kill other or kill individuls
+        if (random.nextInt(1000) < getChanceToSplitting()) {
+            killRandomGroup(groupNo);
+            splitGroup(groupNo);
+        } else {
+            killRandomIndividual(groupNo);
+        }
+    }
+
+    private void killRandomGroup(Integer exceptGroup) {
+        List<Integer> groupList = getDistinctGroup().collect(Collectors.toList());
+        for (; ; ) {
+            int index = random.nextInt(groupList.size());
+            if (groupList.get(index).equals(exceptGroup)) {
+                continue;
+            }
+            getIndividualsList().stream()
+                    .filter(individual -> individual.getGroup() == groupList.get(index))
+                    .forEach(individual -> {
+                        individuals.set(individual.getPosition(), Optional.empty());
+                    });
+            break;
+        }
+    }
+
+    private void splitGroup(Integer groupNo) {
+//        List<Individual> groupList = getIndividualsList().stream()
+//                .filter(individual -> individual.getGroup() == groupNo)
+//                .collect(Collectors.toList());
+        //todo
+    }
+
+    private void killRandomIndividual(int groupNo) {
+        List<Individual> currentGroup = getIndividualsList().stream()
+                .filter(individual -> individual.getGroup() == groupNo)
+                .collect(Collectors.toList());
+        int index = random.nextInt(currentGroup.size());
+        int position = currentGroup.get(index).getPosition();
+        individuals.set(position, Optional.empty());
     }
 
     private boolean isInputValid() {
