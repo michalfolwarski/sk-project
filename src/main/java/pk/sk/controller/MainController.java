@@ -16,6 +16,7 @@ import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class MainController implements Initializable {
     private static final int WIDTH = 100;
@@ -48,6 +49,8 @@ public class MainController implements Initializable {
     private int height;
     private Random random = new Random();
     private HashMap<Integer, Integer> colorsOfGroup = new HashMap<>();
+    private long cycle;
+    private int lastGroupNumber;
 
     public static void quit() {
         isRunning = false;
@@ -65,6 +68,8 @@ public class MainController implements Initializable {
     }
 
     private void cleanUp() {
+        cycle = 0;
+        lastGroupNumber = 0;
         individuals.clear();
         individuals.addAll(Collections.nCopies(HEIGHT * WIDTH, Optional.empty()));
     }
@@ -91,7 +96,7 @@ public class MainController implements Initializable {
                     || !getNearestNeighboursIn(position, LEADERS_RANGE).isEmpty()) {
                 group--;
             } else {
-                Individual newIndividual = new Individual(group);
+                Individual newIndividual = new Individual(lastGroupNumber++, position);
                 individuals.set(position, Optional.of(newIndividual));
                 colorsOfGroup.put(group, getRandomColor());
             }
@@ -100,7 +105,7 @@ public class MainController implements Initializable {
 
     private void generateRandomPopulation() {
         int defectors = Integer.parseInt(defectorsField.getText()) * getInitialPopulation() / 100;
-        int population = getInitialPopulation() - countGroups();
+        long population = getInitialPopulation() - countGroups();
 
         generateRandomCooperators(population);
         chooseRandomDefectors(defectors);
@@ -127,15 +132,19 @@ public class MainController implements Initializable {
                 .collect(Collectors.toList());
     }
 
-    private int countGroups() {
+    private long countGroups() {
+        return getDistinctGroup().count();
+    }
+
+    private Stream<Integer> getDistinctGroup() {
         return individuals.stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .map(Individual::getGroup)
-                .collect(Collectors.toSet()).size();
+                .distinct();
     }
 
-    private void generateRandomCooperators(int population) {
+    private void generateRandomCooperators(long population) {
         int length = WIDTH * HEIGHT;
         for (int i = 0; i < population; i++) {
             int position = random.nextInt(length);
@@ -147,12 +156,19 @@ public class MainController implements Initializable {
             Set<Integer> neighboursGroup = neighbours.stream()
                     .map(Individual::getGroup)
                     .collect(Collectors.toSet());
-            if (neighbours.size() >= getMaxPopulationPerGroup() || neighboursGroup.size() != 1) {
+            if (neighboursGroup.size() != 1
+                    || getGroupSize(neighbours.get(0).getGroup()) >= getMaxPopulationPerGroup()) {
                 i--;
                 continue;
             }
-            individuals.set(position, Optional.of(new Individual(neighbours.get(0).getGroup())));
+            individuals.set(position, Optional.of(new Individual(neighbours.get(0).getGroup(), position)));
         }
+    }
+
+    private long getGroupSize(int groupNo) {
+        return getIndividualsList().stream()
+                .filter(individual -> individual.getGroup() == groupNo)
+                .count();
     }
 
     private List<Individual> getNearestNeighboursIn(int position, int range) {
@@ -186,6 +202,10 @@ public class MainController implements Initializable {
 
     private int getMaxPopulationPerGroup() {
         return Integer.parseInt(maxPopulationPerGroup.getText());
+    }
+
+    private int getChanceToSplitting() {
+        return Integer.parseInt(probabilityOfSplittingGroupField.getText());
     }
 
     private void markGroupArea(int index) {
@@ -325,12 +345,14 @@ public class MainController implements Initializable {
         generateRandomGroups();
         generateRandomPopulation();
         refreshImage();
+        updateStatusBar();
         startAnimation();
     }
 
     private void startAnimation() {
         new Thread(() -> {
             while (isRunning) {
+                cycle++;
                 nextStep();
                 refreshImage();
                 updateStatusBar();
@@ -348,11 +370,11 @@ public class MainController implements Initializable {
         long cooperators = countIndividuals(IndividualType.COOPERATOR);
         long defectors = countIndividuals(IndividualType.DEFECTOR);
         long total = cooperators + defectors;
-        int groups = countGroups();
+        long groups = countGroups();
 
-        String statusMessage =
-                String.format("Total Population: %-5d Cooperators: %-5d Defectors: %-5d Groups: %-5d",
-                total, cooperators, defectors, groups);
+        String statusMessage = String.format(
+                "Total Population: %-5d Cooperators: %-5d Defectors: %-5d Groups: %-5d Cycle: %d",
+                total, cooperators, defectors, groups, cycle);
 
         System.out.println(statusMessage); //todo rem
         Platform.runLater(() -> statusBar.setText(statusMessage));
@@ -369,7 +391,31 @@ public class MainController implements Initializable {
 
     private void nextStep() {
         //TODO
+        checkSizeOfGroups();
         System.out.println("next step");
+    }
+
+    private void checkSizeOfGroups() {
+        List<Integer> groupsToSplitting = new ArrayList<>();
+        List<Individual> individualsList = getIndividualsList();
+        List<Integer> groupList = individualsList.stream()
+                .map(Individual::getGroup)
+                .distinct()
+                .collect(Collectors.toList());
+        groupList.forEach(groupNo -> {
+            long size = individualsList.stream()
+                    .filter(individual -> individual.getGroup() == groupNo).count();
+            if (size >= getMaxPopulationPerGroup()) {
+                groupsToSplitting.add(groupNo);
+            }
+        });
+        if (!groupsToSplitting.isEmpty()) {
+            groupsToSplitting.forEach(this::tryToSplitGroup);
+        }
+    }
+
+    private void tryToSplitGroup(Integer groupNo) {
+        //todo check probability, split group and kill other or kill individuls
     }
 
     private boolean isInputValid() {
