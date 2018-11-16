@@ -29,6 +29,7 @@ public class MainController implements Initializable {
     private static final int INDIVIDUAL_RANGE = 2;
     private static final int GROUP_RANGE = 1;
     private static final int REPRODUCE_RANGE = 1;
+    private static final int REPRODUCTION_RATIO = 5;
 
     private static boolean isRunning = false;
 
@@ -206,7 +207,7 @@ public class MainController implements Initializable {
     }
 
     private double getChanceToKillingGroup() {
-        //todo probability of killing group
+        //todo create a field for probability of killing group
         return 0.5;
     }
 
@@ -375,10 +376,10 @@ public class MainController implements Initializable {
         long groups = countGroups();
 
         String statusMessage = String.format(
-                "Total Population: %-5d Cooperators: %-5d Defectors: %-5d Groups: %-5d Cycle: %d",
+                "Total Population: %-5d Cooperators: %-5d Defectors: %-5d Groups: %-5d Cycle: %-5d",
                 total, cooperators, defectors, groups, cycle);
 
-        System.out.println(statusMessage); //todo rem
+        System.out.println(statusMessage);
         Platform.runLater(() -> statusBar.setText(statusMessage));
     }
 
@@ -401,9 +402,13 @@ public class MainController implements Initializable {
             if (emptyPositionList.isEmpty()) {
                 return;
             }
+            Set<Integer> checkedPositions = new HashSet<>();
             for (int i = 0; i < emptyPositionList.size(); i++) {
-                //fixme: should check every position
+                if (emptyPositionList.size() == checkedPositions.size()) {
+                    break;
+                }
                 int index = random.nextInt(emptyPositionList.size());
+                checkedPositions.add(index);
 
                 Integer position = emptyPositionList.get(index);
                 List<Individual> neighbours =
@@ -413,8 +418,16 @@ public class MainController implements Initializable {
                     long defectors = countIndividuals(groupNo, IndividualType.DEFECTOR);
                     int numberOfNeighbours = getNearestNeighboursIn(position, REPRODUCE_RANGE).size();
 
-                    //todo select right type of individuals
-                    IndividualType type = IndividualType.COOPERATOR;
+                    IndividualType type;
+                    if (cooperators == 0) {
+                        type = IndividualType.DEFECTOR;
+                    } else if (defectors == 0) {
+                        type = IndividualType.COOPERATOR;
+                    } else if (numberOfNeighbours > REPRODUCTION_RATIO) {
+                        type = IndividualType.DEFECTOR;
+                    } else {
+                        type = IndividualType.COOPERATOR;
+                    }
 
                     Individual newIndividual = new Individual(groupNo, position, type);
                     individuals.set(position, Optional.of(newIndividual));
@@ -509,11 +522,17 @@ public class MainController implements Initializable {
     private void findAndMove(int oldGroup, int newGroup) {
         getGroup(oldGroup)
                 .forEach(individual -> {
-                    Stream<Individual> neighbours =
-                            getNearestNeighboursIn(individual.getPosition(), INDIVIDUAL_RANGE).stream();
-                    //todo refactor it
-                    if (neighbours.map(Individual::getGroup).distinct().count() <= 2
-                            && neighbours.filter(individual1 -> individual1.getGroup() == newGroup).distinct().count() >= 1) {
+                    List<Individual> neighbours =
+                            getNearestNeighboursIn(individual.getPosition(), INDIVIDUAL_RANGE);
+                    long distinctNeighboursGroups = neighbours.stream()
+                            .map(Individual::getGroup)
+                            .distinct()
+                            .count();
+                    long numberOfNeighboursNewGroup = neighbours.stream()
+                            .filter(individual1 -> individual1.getGroup() == newGroup)
+                            .distinct()
+                            .count();
+                    if (distinctNeighboursGroups <= 2 && numberOfNeighboursNewGroup >= 1) {
                         moveToGroup(individual.getPosition(), newGroup);
                     } else {
                         individuals.set(individual.getPosition(), Optional.empty());
