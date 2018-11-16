@@ -7,7 +7,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.Spinner;
 import javafx.scene.image.ImageView;
 import pk.sk.model.Individual;
 import pk.sk.model.IndividualType;
@@ -33,14 +33,14 @@ public class MainController implements Initializable {
 
     private static boolean isRunning = false;
 
-    public TextField initialPopulationField;
-    public TextField defectorsField;
-    public TextField maxPopulationPerGroup;
-    public TextField maxNumberOfGroupsField;
     public Button runButton;
-    public TextField delayField;
-    public TextField probabilityOfSplittingGroupField;
     public Label statusBar;
+    public Spinner<Integer> initialPopulation;
+    public Spinner<Integer> defectors;
+    public Spinner<Integer> delay;
+    public Spinner<Integer> maxNumberOfGroups;
+    public Spinner<Integer> maxPopulationPerGroup;
+    public Spinner<Integer> probabilityOfSplittingGroup;
 
     @FXML
     private ImageView outputContainer;
@@ -66,7 +66,6 @@ public class MainController implements Initializable {
         pixels = outputImage.getRGB(0, 0, WIDTH, HEIGHT, null, 0, WIDTH);
 
         refreshImage();
-        updateStatusBar();
     }
 
     private void cleanUp() {
@@ -106,7 +105,7 @@ public class MainController implements Initializable {
     }
 
     private void generateRandomPopulation() {
-        int defectors = Integer.parseInt(defectorsField.getText()) * getInitialPopulation() / 100;
+        int defectors = this.defectors.getValue() * getInitialPopulation() / 100;
         long population = getInitialPopulation() - countGroups();
 
         generateRandomCooperators(population);
@@ -175,7 +174,7 @@ public class MainController implements Initializable {
     }
 
     private int getInitialPopulation() {
-        return Integer.parseInt(initialPopulationField.getText()) * getMaxPopulation() / 100;
+        return initialPopulation.getValue() * getMaxPopulation() / 100;
     }
 
     private int getRandomColor() {
@@ -195,15 +194,15 @@ public class MainController implements Initializable {
     }
 
     private int getMaxGroupNumber() {
-        return Integer.parseInt(maxNumberOfGroupsField.getText());
+        return maxNumberOfGroups.getValue();
     }
 
     private int getMaxPopulationPerGroup() {
-        return Integer.parseInt(maxPopulationPerGroup.getText());
+        return maxPopulationPerGroup.getValue();
     }
 
     private int getChanceToSplitting() {
-        return Integer.parseInt(probabilityOfSplittingGroupField.getText());
+        return probabilityOfSplittingGroup.getValue();
     }
 
     private double getChanceToKillingGroup() {
@@ -282,51 +281,7 @@ public class MainController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupOutputContainer();
-        createFieldListeners();
         cleanUp();
-    }
-
-    private void createFieldListeners() {
-        initialPopulationField.textProperty()
-                .addListener((observableValue, oldValue, newValue) ->
-                        initialPopulationField.setText(filterNumber(newValue)));
-        defectorsField.textProperty()
-                .addListener((observableValue, oldValue, newValue) ->
-                        defectorsField.setText(filterNumber(newValue)));
-        delayField.textProperty()
-                .addListener((observableValue, oldValue, newValue) ->
-                        delayField.setText(filterNumber(newValue)));
-        maxNumberOfGroupsField.textProperty()
-                .addListener((observableValue, oldValue, newValue) ->
-                        maxNumberOfGroupsField.setText(filterNumber(newValue)));
-        maxPopulationPerGroup.textProperty()
-                .addListener((observableValue, oldValue, newValue) ->
-                        maxPopulationPerGroup.setText(filterNumber(newValue)));
-        probabilityOfSplittingGroupField.textProperty()
-                .addListener((observableValue, oldValue, newValue) ->
-                        probabilityOfSplittingGroupField.setText(filterNumber(newValue)));
-    }
-
-    private String filterNumber(String value) {
-        if (value == null || value.length() == 0) {
-            return "";
-        }
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i < value.length(); ++i) {
-            char c = value.charAt(i);
-            if (c >= '0' && c <= '9') {
-                stringBuilder.append(c);
-            }
-        }
-        long number = 0L;
-        try {
-            number = Long.parseLong(stringBuilder.toString());
-        } catch (NumberFormatException ignored) {
-        }
-
-        if (number >= 0)
-            return number + "";
-        return "";
     }
 
     public void run() {
@@ -360,8 +315,7 @@ public class MainController implements Initializable {
                 refreshImage();
                 updateStatusBar();
                 try {
-                    int sleepTime = Integer.parseInt(delayField.getText());
-                    Thread.sleep(sleepTime);
+                    Thread.sleep(delay.getValue());
                 } catch (InterruptedException e) {
                     break;
                 }
@@ -473,8 +427,8 @@ public class MainController implements Initializable {
         if (getGroupSize(groupNo) == 0) {
             return;
         }
-        if (random.nextInt(1000) < getChanceToSplitting()) {
-            if (getDistinctGroup().count() == getMaxGroupNumber()
+        if (random.nextInt(100) < getChanceToSplitting()) {
+            if (getDistinctGroup().count() >= getMaxGroupNumber()
                     || random.nextDouble() < getChanceToKillingGroup()) {
                 killRandomGroup(groupNo);
             }
@@ -556,27 +510,10 @@ public class MainController implements Initializable {
     }
 
     private boolean isInputValid() {
-        //todo add constraint for values
         String errorMessage = "";
 
-        if (initialPopulationField.getText() == null || initialPopulationField.getText().length() == 0) {
-            errorMessage += "Empty field: 'Initial population'!\n";
-        }
-        if (defectorsField.getText() == null || defectorsField.getText().length() == 0) {
-            errorMessage += "Empty field: 'Defectors'!\n";
-        }
-        if (maxNumberOfGroupsField.getText() == null || maxNumberOfGroupsField.getText().length() == 0) {
-            errorMessage += "Empty field: 'Max number of groups'!\n";
-        }
-        if (maxPopulationPerGroup.getText() == null || maxPopulationPerGroup.getText().length() == 0) {
-            errorMessage += "Empty field: 'Max population per group'!\n";
-        }
-
-        if (delayField.getText() == null || delayField.getText().length() == 0) {
-            errorMessage += "Empty field: 'Delay [ms]'!\n";
-        }
-        if (probabilityOfSplittingGroupField.getText() == null || probabilityOfSplittingGroupField.getText().length() == 0) {
-            errorMessage += "Empty field: 'Probability of split the group [‰]'!\n";
+        if (WIDTH * HEIGHT < getMaxGroupNumber() * getMaxPopulationPerGroup()) {
+            errorMessage += "Maximum population would exceed the number of cells (" + WIDTH * HEIGHT + ")!";
         }
         if (errorMessage.length() == 0) {
             return true;
@@ -590,7 +527,7 @@ public class MainController implements Initializable {
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.initOwner(runButton.getScene().getWindow());
-            alert.setTitle("Invalid Fields");
+            alert.setTitle("Invalid Values");
             alert.setHeaderText("");
             alert.setContentText(finalErrorMessage);
             alert.showAndWait();
