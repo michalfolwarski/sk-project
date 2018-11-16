@@ -27,7 +27,7 @@ public class MainController implements Initializable {
     private static final int DEFECTORS_PIXEL = 0xFF000000; // black
     private static final int LEADERS_RANGE = 3;
     private static final int INDIVIDUAL_RANGE = 2;
-    private static final int GROUP_MARK_RANGE = 1;
+    private static final int GROUP_RANGE = 1;
 
     private static boolean isRunning = false;
 
@@ -81,7 +81,7 @@ public class MainController implements Initializable {
     }
 
     private void generateRandomGroups() {
-        int maxNumberOfGroups = Integer.parseInt(maxNumberOfGroupsField.getText());
+        int maxNumberOfGroups = getMaxGroupNumber();
         int min = Math.max(maxNumberOfGroups / 2, 3);
         int numberOfGroups = min + random.nextInt(maxNumberOfGroups - min + 1);
 
@@ -126,9 +126,7 @@ public class MainController implements Initializable {
     }
 
     private List<Individual> getIndividualsList() {
-        return individuals.stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+        return getIndividuals()
                 .collect(Collectors.toList());
     }
 
@@ -137,9 +135,7 @@ public class MainController implements Initializable {
     }
 
     private Stream<Integer> getDistinctGroup() {
-        return individuals.stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+        return getIndividuals()
                 .map(Individual::getGroup)
                 .distinct();
     }
@@ -166,9 +162,7 @@ public class MainController implements Initializable {
     }
 
     private long getGroupSize(int groupNo) {
-        return getIndividualsList().stream()
-                .filter(individual -> individual.getGroup() == groupNo)
-                .count();
+        return getGroup(groupNo).count();
     }
 
     private List<Individual> getNearestNeighboursIn(int position, int range) {
@@ -195,7 +189,11 @@ public class MainController implements Initializable {
     }
 
     private int getMaxPopulation() {
-        return Integer.parseInt(maxNumberOfGroupsField.getText()) * getMaxPopulationPerGroup();
+        return getMaxGroupNumber() * getMaxPopulationPerGroup();
+    }
+
+    private int getMaxGroupNumber() {
+        return Integer.parseInt(maxNumberOfGroupsField.getText());
     }
 
     private int getMaxPopulationPerGroup() {
@@ -206,11 +204,16 @@ public class MainController implements Initializable {
         return Integer.parseInt(probabilityOfSplittingGroupField.getText());
     }
 
+    private double getChanceToKillingGroup() {
+        //todo probability of killing group
+        return 0.5;
+    }
+
     private void markGroupArea(int index) {
         int group = individuals.get(index).get().getGroup();
         int color = colorsOfGroup.get(group);
 
-        getNeighboursPosition(index, GROUP_MARK_RANGE)
+        getNeighboursPosition(index, GROUP_RANGE)
                 .forEach(position -> {
                     if (!individuals.get(position).isPresent()) {
                         pixels[position] = color;
@@ -379,37 +382,39 @@ public class MainController implements Initializable {
     }
 
     private long countIndividuals(IndividualType cooperator) {
-        return individuals.stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+        return getIndividuals()
                 .map(Individual::getType)
                 .filter(type -> type.equals(cooperator))
                 .count();
     }
 
     private void nextStep() {
-        checkSizeOfGroups();
-        //TODO
-        System.out.println("next step");
+        selectAndTrySplitGroups();
+        reproduceGroups();
     }
 
-    private void checkSizeOfGroups() {
+    private void reproduceGroups() {
+        //todo
+    }
+
+    private Stream<Individual> getGroup(Integer groupNo) {
+        return getIndividuals().filter(individual -> individual.getGroup() == groupNo);
+    }
+
+    private Stream<Individual> getIndividuals() {
+        return individuals.stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get);
+    }
+
+    private void selectAndTrySplitGroups() {
         List<Integer> groupsToSplitting = new ArrayList<>();
-        List<Individual> individualsList = getIndividualsList();
-        List<Integer> groupList = individualsList.stream()
-                .map(Individual::getGroup)
-                .distinct()
-                .collect(Collectors.toList());
-        groupList.forEach(groupNo -> {
-            long size = individualsList.stream()
-                    .filter(individual -> individual.getGroup() == groupNo).count();
-            if (size >= getMaxPopulationPerGroup()) {
+        getDistinctGroup().forEach(groupNo -> {
+            if (getGroupSize(groupNo) >= getMaxPopulationPerGroup()) {
                 groupsToSplitting.add(groupNo);
             }
         });
-        if (!groupsToSplitting.isEmpty()) {
-            groupsToSplitting.forEach(this::tryToSplitGroup);
-        }
+        groupsToSplitting.forEach(this::tryToSplitGroup);
     }
 
     private void tryToSplitGroup(Integer groupNo) {
@@ -417,7 +422,10 @@ public class MainController implements Initializable {
             return;
         }
         if (random.nextInt(1000) < getChanceToSplitting()) {
-            killRandomGroup(groupNo);
+            if (getDistinctGroup().count() == getMaxGroupNumber()
+                    || random.nextDouble() < getChanceToKillingGroup()) {
+                killRandomGroup(groupNo);
+            }
             splitGroup(groupNo);
         } else {
             killRandomIndividual(groupNo);
@@ -433,17 +441,13 @@ public class MainController implements Initializable {
             }
             getIndividualsList().stream()
                     .filter(individual -> individual.getGroup() == groupList.get(index))
-                    .forEach(individual -> {
-                        individuals.set(individual.getPosition(), Optional.empty());
-                    });
+                    .forEach(individual -> individuals.set(individual.getPosition(), Optional.empty()));
             break;
         }
     }
 
     private void splitGroup(Integer groupNo) {
-        List<Individual> groupList = getIndividualsList().stream()
-                .filter(individual -> individual.getGroup() == groupNo)
-                .collect(Collectors.toList());
+        List<Individual> groupList = getGroup(groupNo).collect(Collectors.toList());
         int index1 = random.nextInt(groupList.size());
         int index2 = random.nextInt(groupList.size() - 1);
         if (index1 == index2) {
@@ -464,15 +468,18 @@ public class MainController implements Initializable {
     }
 
     private void findAndMove(int oldGroup, int newGroup) {
-        individuals.stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .filter(o -> o.getGroup() == oldGroup)
-                .forEach(individual -> getNearestNeighboursIn(individual.getPosition(), INDIVIDUAL_RANGE)
-                        .stream()
-                        .filter(individual1 -> individual1.getGroup() == newGroup)
-                        .findAny()
-                        .ifPresent(x -> moveToGroup(individual.getPosition(), newGroup)));
+        getGroup(oldGroup)
+                .forEach(individual -> {
+                    Stream<Individual> neighbours =
+                            getNearestNeighboursIn(individual.getPosition(), INDIVIDUAL_RANGE).stream();
+                    //todo refactor it
+                    if (neighbours.map(Individual::getGroup).distinct().count() <= 2
+                            && neighbours.filter(individual1 -> individual1.getGroup() == newGroup).distinct().count() >= 1) {
+                        moveToGroup(individual.getPosition(), newGroup);
+                    } else {
+                        individuals.set(individual.getPosition(), Optional.empty());
+                    }
+                });
     }
 
     private void moveToGroup(int position, int groupNo) {
