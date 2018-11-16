@@ -211,6 +211,9 @@ public class MainController implements Initializable {
     }
 
     private void markGroupArea(int index) {
+        if (!individuals.get(index).isPresent()) {
+            return;
+        }
         int group = individuals.get(index).get().getGroup();
         int color = colorsOfGroup.get(group);
 
@@ -289,13 +292,19 @@ public class MainController implements Initializable {
             return;
         }
         if (isRunning) {
+            prepareForLaunchSimulation();
             runButton.setText("Reset & Run");
-            isRunning = false;
         } else {
+            prepareForLaunchSimulation();
             runButton.setText("Stop");
-            isRunning = true;
             launchSimulation();
         }
+    }
+
+    private void prepareForLaunchSimulation() {
+        isRunning = !isRunning;
+        initialPopulation.setDisable(isRunning);
+        defectors.setDisable(isRunning);
     }
 
     private void launchSimulation() {
@@ -377,7 +386,7 @@ public class MainController implements Initializable {
                         type = IndividualType.DEFECTOR;
                     } else if (defectors == 0) {
                         type = IndividualType.COOPERATOR;
-                    } else if (numberOfNeighbours > REPRODUCTION_RATIO) {
+                    } else if (numberOfNeighbours >= REPRODUCTION_RATIO) {
                         type = IndividualType.DEFECTOR;
                     } else {
                         type = IndividualType.COOPERATOR;
@@ -428,8 +437,9 @@ public class MainController implements Initializable {
             return;
         }
         if (random.nextInt(100) < getChanceToSplitting()) {
-            if (getDistinctGroup().count() >= getMaxGroupNumber()
-                    || random.nextDouble() < getChanceToKillingGroup()) {
+            if (getDistinctGroup().count() > 2
+                    && (getDistinctGroup().count() >= getMaxGroupNumber()
+                    || random.nextDouble() < getChanceToKillingGroup())) {
                 killRandomGroup(groupNo);
             }
             splitGroup(groupNo);
@@ -440,14 +450,17 @@ public class MainController implements Initializable {
 
     private void killRandomGroup(Integer exceptGroup) {
         List<Integer> groupList = getDistinctGroup().collect(Collectors.toList());
+        if (groupList.size() <= 2) {
+            return;
+        }
         for (; ; ) {
             int index = random.nextInt(groupList.size());
             if (groupList.get(index).equals(exceptGroup)) {
                 continue;
             }
-            getIndividualsList().stream()
-                    .filter(individual -> individual.getGroup() == groupList.get(index))
+            getGroup(groupList.get(index))
                     .forEach(individual -> individuals.set(individual.getPosition(), Optional.empty()));
+            colorsOfGroup.remove(groupList.get(index));
             break;
         }
     }
@@ -456,11 +469,21 @@ public class MainController implements Initializable {
         List<Individual> groupList = getGroup(groupNo).collect(Collectors.toList());
         int index1 = random.nextInt(groupList.size());
         int index2 = random.nextInt(groupList.size() - 1);
-        if (index1 == index2) {
-            index2++;
-        }
         int group1 = lastGroupNumber++;
         int group2 = lastGroupNumber++;
+
+        for (; ; ) {
+            if (index1 == index2) {
+                index2++;
+            }
+            if (getGroupSize(groupNo) <= 4
+                    || !getNeighboursPosition(groupList.get(index1).getPosition(), INDIVIDUAL_RANGE)
+                    .contains(groupList.get(index2).getPosition())) {
+                break;
+            }
+            index1 = random.nextInt(groupList.size());
+            index2 = random.nextInt(groupList.size() - 1);
+        }
         moveToGroup(groupList.get(index1).getPosition(), group1);
         moveToGroup(groupList.get(index2).getPosition(), group2);
         moveRestIndividualsToNewGroups(groupNo, group1, group2);
@@ -511,25 +534,28 @@ public class MainController implements Initializable {
 
     private boolean isInputValid() {
         String errorMessage = "";
+        String header = "";
 
         if (WIDTH * HEIGHT < getMaxGroupNumber() * getMaxPopulationPerGroup()) {
-            errorMessage += "Maximum population would exceed the number of cells (" + WIDTH * HEIGHT + ")!";
+            header += "The maximum population would exceed the total number of cells ("
+                    + WIDTH * HEIGHT + ")!";
+            errorMessage += "Please, decrease the 'Maximum groups' or 'Maximum population per group' value.";
         }
         if (errorMessage.length() == 0) {
             return true;
         } else {
-            alertError(errorMessage);
+            alertError(header, errorMessage);
             return false;
         }
     }
 
-    private void alertError(String finalErrorMessage) {
+    private void alertError(String header, String errorMessage) {
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.initOwner(runButton.getScene().getWindow());
             alert.setTitle("Invalid Values");
-            alert.setHeaderText("");
-            alert.setContentText(finalErrorMessage);
+            alert.setHeaderText(header);
+            alert.setContentText(errorMessage);
             alert.showAndWait();
         });
     }

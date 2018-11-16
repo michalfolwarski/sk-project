@@ -10,7 +10,7 @@
             <ColumnConstraints hgrow="SOMETIMES" maxWidth="230.0" minWidth="100.0" prefWidth="150.0"/>
             <ColumnConstraints hgrow="SOMETIMES" maxWidth="80.0" minWidth="50.0" prefWidth="70.0"/>
             <ColumnConstraints hgrow="SOMETIMES" maxWidth="20.0" minWidth="10.0" prefWidth="10.0"/>
-            <ColumnConstraints hgrow="SOMETIMES" maxWidth="230.0" minWidth="100.0" prefWidth="180.0"/>
+            <ColumnConstraints hgrow="SOMETIMES" maxWidth="230.0" minWidth="100.0" prefWidth="170.0"/>
             <ColumnConstraints hgrow="SOMETIMES" maxWidth="80.0" minWidth="50.0" prefWidth="70.0"/>
         </columnConstraints>
         <rowConstraints>
@@ -37,7 +37,7 @@
         </Spinner>
         <Spinner fx:id="defectors" GridPane.columnIndex="1" GridPane.rowIndex="1">
             <valueFactory>
-                <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="20" amountToStepBy="1" min="0" max="100"/>
+                <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="30" amountToStepBy="1" min="0" max="100"/>
             </valueFactory>
         </Spinner>
         <Spinner fx:id="delay" GridPane.columnIndex="1" GridPane.rowIndex="2">
@@ -71,6 +71,6 @@
         <ImageView fx:id="outputContainer" preserveRatio="true"
                    style="-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 10, 0, 0, 0);" GridPane.columnSpan="5"
                    GridPane.halignment="CENTER" GridPane.rowIndex="6"/>
-        <Label fx:id="statusBar" GridPane.columnSpan="4" GridPane.rowIndex="8"/>
+        <Label fx:id="statusBar" GridPane.columnSpan="5" GridPane.rowIndex="8"/>
     </GridPane>
 </AnchorPane>
