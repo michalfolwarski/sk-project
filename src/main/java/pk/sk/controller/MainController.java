@@ -174,9 +174,7 @@ public class MainController implements Initializable {
     private List<Individual> getNearestNeighboursIn(int position, int range) {
         List<Individual> neighbours = new ArrayList<>();
         getNeighboursPosition(position, range)
-                .forEach(coordinates -> {
-                    individuals.get(coordinates).ifPresent(neighbours::add);
-                });
+                .forEach(coordinates -> individuals.get(coordinates).ifPresent(neighbours::add));
         return neighbours;
     }
 
@@ -390,8 +388,8 @@ public class MainController implements Initializable {
     }
 
     private void nextStep() {
-        //TODO
         checkSizeOfGroups();
+        //TODO
         System.out.println("next step");
     }
 
@@ -415,6 +413,9 @@ public class MainController implements Initializable {
     }
 
     private void tryToSplitGroup(Integer groupNo) {
+        if (getGroupSize(groupNo) == 0) {
+            return;
+        }
         if (random.nextInt(1000) < getChanceToSplitting()) {
             killRandomGroup(groupNo);
             splitGroup(groupNo);
@@ -440,10 +441,44 @@ public class MainController implements Initializable {
     }
 
     private void splitGroup(Integer groupNo) {
-//        List<Individual> groupList = getIndividualsList().stream()
-//                .filter(individual -> individual.getGroup() == groupNo)
-//                .collect(Collectors.toList());
-        //todo
+        List<Individual> groupList = getIndividualsList().stream()
+                .filter(individual -> individual.getGroup() == groupNo)
+                .collect(Collectors.toList());
+        int index1 = random.nextInt(groupList.size());
+        int index2 = random.nextInt(groupList.size() - 1);
+        if (index1 == index2) {
+            index2++;
+        }
+        int group1 = lastGroupNumber++;
+        int group2 = lastGroupNumber++;
+        moveToGroup(groupList.get(index1).getPosition(), group1);
+        moveToGroup(groupList.get(index2).getPosition(), group2);
+        moveRestIndividualsToNewGroups(groupNo, group1, group2);
+    }
+
+    private void moveRestIndividualsToNewGroups(Integer oldGroup, int newGroup1, int newGroup2) {
+        while (getGroupSize(oldGroup) > 0) {
+            findAndMove(oldGroup, newGroup1);
+            findAndMove(oldGroup, newGroup2);
+        }
+    }
+
+    private void findAndMove(int oldGroup, int newGroup) {
+        individuals.stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .filter(o -> o.getGroup() == oldGroup)
+                .forEach(individual -> getNearestNeighboursIn(individual.getPosition(), INDIVIDUAL_RANGE)
+                        .stream()
+                        .filter(individual1 -> individual1.getGroup() == newGroup)
+                        .findAny()
+                        .ifPresent(x -> moveToGroup(individual.getPosition(), newGroup)));
+    }
+
+    private void moveToGroup(int position, int groupNo) {
+        individuals.get(position)
+                .ifPresent(individual -> individual.setGroup(groupNo));
+        colorsOfGroup.put(groupNo, getRandomColor());
     }
 
     private void killRandomIndividual(int groupNo) {
