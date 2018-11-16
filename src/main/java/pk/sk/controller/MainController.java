@@ -28,6 +28,7 @@ public class MainController implements Initializable {
     private static final int LEADERS_RANGE = 3;
     private static final int INDIVIDUAL_RANGE = 2;
     private static final int GROUP_RANGE = 1;
+    private static final int REPRODUCE_RANGE = 1;
 
     private static boolean isRunning = false;
 
@@ -394,7 +395,45 @@ public class MainController implements Initializable {
     }
 
     private void reproduceGroups() {
-        //todo
+        List<Integer> groupList = getDistinctGroup().collect(Collectors.toList());
+        groupList.forEach(groupNo -> {
+            List<Integer> emptyPositionList = getEmptyPositionForNewIndividuals(groupNo);
+            if (emptyPositionList.isEmpty()) {
+                return;
+            }
+            for (int i = 0; i < emptyPositionList.size(); i++) {
+                //fixme: should check every position
+                int index = random.nextInt(emptyPositionList.size());
+
+                Integer position = emptyPositionList.get(index);
+                List<Individual> neighbours =
+                        getNearestNeighboursIn(position, INDIVIDUAL_RANGE);
+                if (neighbours.stream().map(Individual::getGroup).distinct().count() == 1) {
+                    long cooperators = countIndividuals(groupNo, IndividualType.COOPERATOR);
+                    long defectors = countIndividuals(groupNo, IndividualType.DEFECTOR);
+                    int numberOfNeighbours = getNearestNeighboursIn(position, REPRODUCE_RANGE).size();
+
+                    //todo select right type of individuals
+                    IndividualType type = IndividualType.COOPERATOR;
+
+                    Individual newIndividual = new Individual(groupNo, position, type);
+                    individuals.set(position, Optional.of(newIndividual));
+                    break;
+                }
+            }
+        });
+    }
+
+    private long countIndividuals(Integer groupNo, IndividualType type) {
+        return getGroup(groupNo).filter(t -> t.getType().equals(type)).count();
+    }
+
+    private List<Integer> getEmptyPositionForNewIndividuals(Integer groupNo) {
+        List<Integer> positionList = new ArrayList<>();
+        getGroup(groupNo).map(Individual::getPosition)
+                .forEach(position -> positionList.addAll(getNeighboursPosition(position, GROUP_RANGE)));
+
+        return positionList.stream().distinct().collect(Collectors.toList());
     }
 
     private Stream<Individual> getGroup(Integer groupNo) {
