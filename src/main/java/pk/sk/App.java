@@ -18,21 +18,17 @@ public class App extends Application {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("main.fxml"));
         Parent root = loader.load();
 
-        MainController mainController = loader.getController();
-
         Scene scene = new Scene(root);
 
         stage.setTitle("SK Project - Group Selection");
         stage.setScene(scene);
         stage.setMinWidth(600);
-        stage.setMinHeight(690);
+        stage.setMinHeight(710);
         stage.show();
-
-        mainController.createOutputImage();
     }
 
     @Override
-    public void stop() throws Exception {
+    public void stop() {
         MainController.quit();
     }
 }
