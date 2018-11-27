@@ -1,14 +1,14 @@
 package pk.sk.controller;
 
 import javafx.application.Platform;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.Spinner;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.ScrollEvent;
 import pk.sk.model.Individual;
 import pk.sk.model.IndividualType;
 
@@ -34,7 +34,8 @@ public class MainController implements Initializable {
     private static final int MINIMUM_GROUP_SIZE = 3;
 
     private static boolean isRunning = false;
-
+    @FXML
+    public ScrollPane scrollPane;
     @FXML
     private Button generateButton;
     @FXML
@@ -63,6 +64,7 @@ public class MainController implements Initializable {
     private HashMap<Integer, Integer> colorsOfGroup = new HashMap<>();
     private long cycle;
     private int lastGroupNumber;
+    private DoubleProperty zoomProperty = new SimpleDoubleProperty();
 
     public static void quit() {
         isRunning = false;
@@ -281,7 +283,24 @@ public class MainController implements Initializable {
         outputImage = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_4BYTE_ABGR);
         pixels = outputImage.getRGB(0, 0, WIDTH, HEIGHT, null, 0, WIDTH);
 
+        createEventListeners();
+        zoomProperty.set(450);
         generate();
+    }
+
+    private void createEventListeners() {
+        zoomProperty.addListener(observable -> {
+            outputContainer.setFitWidth(zoomProperty.get());
+            outputContainer.setFitHeight(zoomProperty.get());
+        });
+
+        scrollPane.addEventFilter(ScrollEvent.ANY, event -> {
+            if (event.getDeltaY() > 0) {
+                zoomProperty.set(zoomProperty.get() * 1.1);
+            } else if (event.getDeltaY() < 0) {
+                zoomProperty.set(zoomProperty.get() / 1.1);
+            }
+        });
     }
 
     public void generate() {
@@ -322,7 +341,7 @@ public class MainController implements Initializable {
                 refreshImage();
                 updateStatusBar();
                 try {
-                    Thread.sleep(delay.getValue());
+                    Thread.sleep(delay.getValue() + 1);
                 } catch (InterruptedException e) {
                     break;
                 }

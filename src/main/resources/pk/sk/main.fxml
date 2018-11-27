@@ -1,79 +1,97 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" minHeight="700.0" minWidth="650.0"
-            xmlns="http://javafx.com/javafx/8.0.172-ea" fx:controller="pk.sk.controller.MainController">
-    <GridPane AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0"
-              AnchorPane.bottomAnchor="30" maxHeight="Infinity" maxWidth="Infinity">
-        <columnConstraints>
-            <ColumnConstraints hgrow="SOMETIMES" maxWidth="230.0" minWidth="100.0" prefWidth="150.0"/>
-            <ColumnConstraints hgrow="SOMETIMES" maxWidth="80.0" minWidth="50.0" prefWidth="70.0"/>
-            <ColumnConstraints hgrow="SOMETIMES" maxWidth="20.0" minWidth="10.0" prefWidth="10.0"/>
-            <ColumnConstraints hgrow="SOMETIMES" maxWidth="230.0" minWidth="100.0" prefWidth="170.0"/>
-            <ColumnConstraints hgrow="SOMETIMES" maxWidth="80.0" minWidth="50.0" prefWidth="70.0"/>
-            <ColumnConstraints hgrow="ALWAYS" maxWidth="10.0" minWidth="0.0" prefWidth="10.0"/>
-        </columnConstraints>
-        <rowConstraints>
-            <RowConstraints minHeight="20.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-            <RowConstraints minHeight="20.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-            <RowConstraints minHeight="20.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-            <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES"/>
-            <RowConstraints minHeight="20.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-            <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES"/>
-            <RowConstraints minHeight="500.0" prefHeight="500.0" vgrow="ALWAYS"/>
-        </rowConstraints>
-        <Label text="Initial population [%]"/>
-        <Label text="Defectors of initial population [%]" GridPane.rowIndex="1"/>
-        <Label text="Delay [ms]" GridPane.rowIndex="2"/>
-        <Label text="Max number of groups" GridPane.columnIndex="3"/>
-        <Label text="Max population per group" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
-        <Label text="Probability of split the group [%]" GridPane.columnIndex="3" GridPane.rowIndex="2"/>
-        <Spinner fx:id="initialPopulation" GridPane.columnIndex="1">
-            <valueFactory>
-                <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="30" amountToStepBy="1" min="1" max="100"/>
-            </valueFactory>
-        </Spinner>
-        <Spinner fx:id="defectors" GridPane.columnIndex="1" GridPane.rowIndex="1">
-            <valueFactory>
-                <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="50" amountToStepBy="1" min="0" max="100"/>
-            </valueFactory>
-        </Spinner>
-        <Spinner fx:id="delay" GridPane.columnIndex="1" GridPane.rowIndex="2">
-            <valueFactory>
-                <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="100" amountToStepBy="20" min="0"
-                                                                max="2000"/>
-            </valueFactory>
-        </Spinner>
-        <Spinner fx:id="maxNumberOfGroups" GridPane.columnIndex="4">
-            <valueFactory>
-                <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="10" amountToStepBy="1" min="3"
-                                                                max="1000"/>
-            </valueFactory>
-        </Spinner>
-        <Spinner fx:id="maxPopulationPerGroup" GridPane.columnIndex="4" GridPane.rowIndex="1">
-            <valueFactory>
-                <SpinnerValueFactory.IntegerSpinnerValueFactory initialValue="30" amountToStepBy="1" min="3"
-                                                                max="1000"/>
-            </valueFactory>
-        </Spinner>
-        <Spinner fx:id="probabilityOfSplittingGroup" GridPane.columnIndex="4" GridPane.rowIndex="2">
-            <valueFactory>
-                <SpinnerValueFactory.DoubleSpinnerValueFactory initialValue="2" amountToStepBy="0.1" min="0"
-                                                               max="100"/>
-            </valueFactory>
-        </Spinner>
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/8.0.172-ea"
+            minWidth="650"
+            fx:controller="pk.sk.controller.MainController">
+    <top>
+        <GridPane>
+            <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="230.0" minWidth="100.0" prefWidth="160.0"/>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="80.0" minWidth="50.0" prefWidth="70.0"/>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="20.0" minWidth="10.0" prefWidth="10.0"/>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="230.0" minWidth="100.0" prefWidth="160.0"/>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="80.0" minWidth="50.0" prefWidth="70.0"/>
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints minHeight="20.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                <RowConstraints minHeight="20.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                <RowConstraints minHeight="20.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES"/>
+                <RowConstraints minHeight="20.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+            </rowConstraints>
+            <Label text="Initial population [%]"/>
+            <Label text="Defectors of initial population [%]" GridPane.rowIndex="1"/>
+            <Label text="Delay [ms]" GridPane.rowIndex="2"/>
+            <Label text="Max number of groups" GridPane.columnIndex="3"/>
+            <Label text="Max population per group" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+            <Label text="Probability of split the group [%]" GridPane.columnIndex="3" GridPane.rowIndex="2"/>
+            <Spinner fx:id="initialPopulation" GridPane.columnIndex="1">
+                <valueFactory>
+                    <SpinnerValueFactory.IntegerSpinnerValueFactory amountToStepBy="1" initialValue="30" max="100"
+                                                                    min="1"/>
+                </valueFactory>
+            </Spinner>
+            <Spinner fx:id="defectors" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                <valueFactory>
+                    <SpinnerValueFactory.IntegerSpinnerValueFactory amountToStepBy="1" initialValue="50" max="100"
+                                                                    min="0"/>
+                </valueFactory>
+            </Spinner>
+            <Spinner fx:id="delay" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                <valueFactory>
+                    <SpinnerValueFactory.IntegerSpinnerValueFactory amountToStepBy="20" initialValue="100" max="2000"
+                                                                    min="0"/>
+                </valueFactory>
+            </Spinner>
+            <Spinner fx:id="maxNumberOfGroups" GridPane.columnIndex="4">
+                <valueFactory>
+                    <SpinnerValueFactory.IntegerSpinnerValueFactory amountToStepBy="1" initialValue="10" max="1000"
+                                                                    min="3"/>
+                </valueFactory>
+            </Spinner>
+            <Spinner fx:id="maxPopulationPerGroup" GridPane.columnIndex="4" GridPane.rowIndex="1">
+                <valueFactory>
+                    <SpinnerValueFactory.IntegerSpinnerValueFactory amountToStepBy="1" initialValue="30" max="1000"
+                                                                    min="3"/>
+                </valueFactory>
+            </Spinner>
+            <Spinner fx:id="probabilityOfSplittingGroup" GridPane.columnIndex="4" GridPane.rowIndex="2">
+                <valueFactory>
+                    <SpinnerValueFactory.DoubleSpinnerValueFactory amountToStepBy="0.1" initialValue="2" max="100"
+                                                                   min="0"/>
+                </valueFactory>
+            </Spinner>
 
-        <Button fx:id="generateButton" mnemonicParsing="false" onAction="#generate" text="Generate Initial Population"
-                GridPane.columnSpan="2" GridPane.rowIndex="4"/>
-        <Button fx:id="runButton" mnemonicParsing="false" onAction="#run" text="Run" disable="true"
-                GridPane.columnIndex="3" GridPane.columnSpan="2" GridPane.halignment="RIGHT" GridPane.rowIndex="4"/>
-
-        <ImageView fx:id="outputContainer" preserveRatio="true" fitHeight="500"
-                   style="-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 10, 0, 0, 0);"
-                   GridPane.halignment="CENTER" GridPane.fillHeight="100" GridPane.columnSpan="6"
-                   GridPane.rowIndex="6"/>
-    </GridPane>
-    <Label fx:id="statusBar" AnchorPane.bottomAnchor="5" AnchorPane.leftAnchor="10"/>
-</AnchorPane>
+            <Button fx:id="generateButton" mnemonicParsing="false" onAction="#generate"
+                    text="Generate Initial Population" GridPane.columnSpan="2" GridPane.rowIndex="4"/>
+            <Button fx:id="runButton" disable="true" mnemonicParsing="false" onAction="#run" text="Run"
+                    GridPane.columnIndex="3" GridPane.columnSpan="2" GridPane.halignment="RIGHT" GridPane.rowIndex="4"/>
+            <BorderPane.margin>
+                <Insets left="10.0" right="10.0" top="10.0" bottom="10"/>
+            </BorderPane.margin>
+        </GridPane>
+    </top>
+    <center>
+        <ScrollPane fx:id="scrollPane" fitToHeight="true">
+            <BorderPane.margin>
+                <Insets left="10.0" right="10.0"/>
+            </BorderPane.margin>
+            <ImageView fx:id="outputContainer" preserveRatio="true"
+                       style="-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 10, 0, 0, 0);">
+            </ImageView>
+        </ScrollPane>
+    </center>
+    <bottom>
+        <HBox>
+            <BorderPane.margin>
+                <Insets bottom="5.0" left="10.0" top="10" right="10"/>
+            </BorderPane.margin>
+            <Label fx:id="statusBar" text="Loading...">
+            </Label>
+        </HBox>
+    </bottom>
+</BorderPane>
