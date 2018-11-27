@@ -1,6 +1,7 @@
 package pk.sk.controller;
 
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.embed.swing.SwingFXUtils;
@@ -22,7 +23,6 @@ import java.util.stream.Stream;
 public class MainController implements Initializable {
     private static final int WIDTH = 100;
     private static final int HEIGHT = 100;
-
     private static final int DEFAULT_PIXEL = 0x00000000; // transparent black
     private static final int COOPERATORS_PIXEL = 0xFFFFFFFF; // white
     private static final int DEFECTORS_PIXEL = 0xFF000000; // black
@@ -34,6 +34,7 @@ public class MainController implements Initializable {
     private static final int MINIMUM_GROUP_SIZE = 3;
 
     private static boolean isRunning = false;
+
     @FXML
     public ScrollPane scrollPane;
     @FXML
@@ -294,17 +295,30 @@ public class MainController implements Initializable {
             outputContainer.setFitHeight(zoomProperty.get());
         });
 
+        InvalidationListener invalidationListener = observable -> {
+            double min = Math.min(scrollPane.getWidth(), scrollPane.getHeight());
+            zoomProperty.setValue(min - 2);
+        };
+
+        scrollPane.heightProperty().addListener(invalidationListener);
+        scrollPane.widthProperty().addListener(invalidationListener);
+
         scrollPane.addEventFilter(ScrollEvent.ANY, event -> {
             if (event.getDeltaY() > 0) {
                 zoomProperty.set(zoomProperty.get() * 1.1);
             } else if (event.getDeltaY() < 0) {
-                zoomProperty.set(zoomProperty.get() / 1.1);
+                double newValue = zoomProperty.get() / 1.1;
+                double min = Math.min(scrollPane.getWidth(), scrollPane.getHeight()) - 2;
+                if (newValue < min) {
+                    newValue = min;
+                }
+                zoomProperty.set(newValue);
             }
         });
     }
 
     public void generate() {
-        System.out.println("Init");
+        System.out.println("Cleanups...");
         cleanUp();
         generateRandomGroups();
         generateRandomPopulation();
