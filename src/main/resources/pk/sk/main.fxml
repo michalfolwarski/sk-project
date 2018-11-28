@@ -66,8 +66,8 @@
                 </valueFactory>
             </Spinner>
 
-            <Button fx:id="generateButton" mnemonicParsing="false" onAction="#generate"
-                    text="Generate Initial Population" GridPane.columnSpan="2" GridPane.rowIndex="4"/>
+            <Button fx:id="resetButton" mnemonicParsing="false" onAction="#initNewSimulation"
+                    text="Reset" GridPane.columnSpan="2" GridPane.rowIndex="4"/>
             <Button fx:id="runButton" disable="true" mnemonicParsing="false" onAction="#run" text="Run"
                     GridPane.columnIndex="3" GridPane.columnSpan="2" GridPane.halignment="RIGHT" GridPane.rowIndex="4"/>
             <BorderPane.margin>

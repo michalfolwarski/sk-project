@@ -38,7 +38,7 @@ public class MainController implements Initializable {
     @FXML
     public ScrollPane scrollPane;
     @FXML
-    private Button generateButton;
+    private Button resetButton;
     @FXML
     private Button runButton;
     @FXML
@@ -140,24 +140,29 @@ public class MainController implements Initializable {
     }
 
     private void generateRandomCooperators(long population) {
-        int length = WIDTH * HEIGHT;
+        int range = WIDTH * HEIGHT;
         for (int i = 0; i < population; i++) {
-            int position = random.nextInt(length);
+            int position = random.nextInt(range);
             if (individuals.get(position).isPresent()) {
                 i--;
                 continue;
             }
             List<Individual> neighbours = getNearestNeighboursIn(position, INDIVIDUAL_RANGE);
-            Set<Integer> neighboursGroup = neighbours.stream()
-                    .map(Individual::getGroup)
-                    .collect(Collectors.toSet());
-            if (neighboursGroup.size() != 1
+            long neighboursGroup = countNeighboursGroups(neighbours);
+            if (neighboursGroup != 1
                     || getGroupSize(neighbours.get(0).getGroup()) >= getMaxPopulationPerGroup()) {
                 i--;
                 continue;
             }
             individuals.set(position, Optional.of(new Individual(neighbours.get(0).getGroup(), position)));
         }
+    }
+
+    private long countNeighboursGroups(List<Individual> neighbours) {
+        return neighbours.stream()
+                .map(Individual::getGroup)
+                .distinct()
+                .count();
     }
 
     private long getGroupSize(int groupNo) {
@@ -172,7 +177,7 @@ public class MainController implements Initializable {
     }
 
     private int getInitialPopulation() {
-        return initialPopulation.getValue() * getMaxPopulation() / 100;
+        return initialPopulation.getValue() * getMaxInitialPopulation() / 100;
     }
 
     private int getRandomColor() {
@@ -187,8 +192,8 @@ public class MainController implements Initializable {
         return (blue) | (green << 8) | (red << 16) | (alpha << 24);
     }
 
-    private int getMaxPopulation() {
-        return getMaxGroupNumber() * getMaxPopulationPerGroup();
+    private int getMaxInitialPopulation() {
+        return (int) (getDistinctGroup().count() * getMaxPopulationPerGroup());
     }
 
     private int getMaxGroupNumber() {
@@ -286,7 +291,7 @@ public class MainController implements Initializable {
 
         createEventListeners();
         zoomProperty.set(450);
-        generate();
+        initNewSimulation();
     }
 
     private void createEventListeners() {
@@ -317,7 +322,7 @@ public class MainController implements Initializable {
         });
     }
 
-    public void generate() {
+    public void initNewSimulation() {
         System.out.println("Cleanups...");
         cleanUp();
         generateRandomGroups();
@@ -334,17 +339,17 @@ public class MainController implements Initializable {
         isRunning = !isRunning;
         prepareScene();
         if (isRunning) {
-            runButton.setText("Pause");
+            runButton.setText("Stop");
             startSimulation();
         } else {
-            runButton.setText("Run");
+            runButton.setText("Start");
         }
     }
 
     private void prepareScene() {
         initialPopulation.setDisable(isRunning);
         defectors.setDisable(isRunning);
-        generateButton.setDisable(isRunning);
+        resetButton.setDisable(isRunning);
     }
 
     private void startSimulation() {
@@ -391,8 +396,7 @@ public class MainController implements Initializable {
 
     private void reproduceGroups() {
         //todo add costs to individuals and change the reproduction model
-        List<Integer> groupList = getDistinctGroup().collect(Collectors.toList());
-        groupList.forEach(groupNo -> {
+        getDistinctGroup().forEach(groupNo -> {
             List<Integer> emptyPositionList = getEmptyPositionForNewIndividuals(groupNo);
             if (emptyPositionList.isEmpty()) {
                 return;
@@ -406,9 +410,8 @@ public class MainController implements Initializable {
                 checkedPositions.add(index);
 
                 Integer position = emptyPositionList.get(index);
-                List<Individual> neighbours =
-                        getNearestNeighboursIn(position, INDIVIDUAL_RANGE);
-                if (neighbours.stream().map(Individual::getGroup).distinct().count() == 1) {
+                List<Individual> neighbours = getNearestNeighboursIn(position, INDIVIDUAL_RANGE);
+                if (countNeighboursGroups(neighbours) == 1) {
                     long cooperators = countIndividualsInGroup(groupNo, IndividualType.COOPERATOR);
                     long defectors = countIndividualsInGroup(groupNo, IndividualType.DEFECTOR);
                     int numberOfNeighbours = getNearestNeighboursIn(position, REPRODUCE_RANGE).size();
@@ -546,22 +549,22 @@ public class MainController implements Initializable {
     private boolean findAndMove(int oldGroup, int newGroup) {
         AtomicBoolean hasSomeoneChangedPosition = new AtomicBoolean(false);
         getGroup(oldGroup).forEach(individual -> {
-            List<Individual> neighbours =
-                    getNearestNeighboursIn(individual.getPosition(), INDIVIDUAL_RANGE);
-            long distinctNeighboursGroups = neighbours.stream()
-                    .map(Individual::getGroup)
-                    .distinct()
-                    .count();
-            long numberOfNeighboursNewGroup = neighbours.stream()
-                    .filter(individual1 -> individual1.getGroup() == newGroup)
-                    .distinct()
-                    .count();
-            if (distinctNeighboursGroups <= 2 && numberOfNeighboursNewGroup >= 1) {
+            List<Individual> neighbours = getNearestNeighboursIn(individual.getPosition(), INDIVIDUAL_RANGE);
+
+            if (countNeighboursGroups(neighbours) <= 2
+                    && countNeighboursGroup(neighbours, newGroup) >= 1) {
                 moveToGroup(individual.getPosition(), newGroup);
                 hasSomeoneChangedPosition.set(true);
             }
         });
         return hasSomeoneChangedPosition.get();
+    }
+
+    private long countNeighboursGroup(List<Individual> neighbours, int groupNo) {
+        return neighbours.stream()
+                .filter(individual1 -> individual1.getGroup() == groupNo)
+                .distinct()
+                .count();
     }
 
     private void moveToGroup(int position, int groupNo) {
