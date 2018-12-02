@@ -14,6 +14,8 @@ public class GroupSelectionSimulator {
     private static final int MINIMUM_GROUP_SIZE = 3;
     private static final int MAX_COST = 10;
     private static final double BENEFIT_COSTS_COEFFICIENT = 1.0;
+    private static final int MAX_COLOR = 236;
+    private static final int MIN_COLOR = 76;
 
     private List<Optional<Individual>> individuals = new ArrayList<>();
     private Random random = new Random();
@@ -97,15 +99,15 @@ public class GroupSelectionSimulator {
     }
 
     private int getRandomColor() {
-        int alpha = 0xFF;
-        int range = 160;
-        int minimumValue = (255 - range) / 5 * 4;
+        int red = getRandomComponentOfColor();
+        int green = getRandomComponentOfColor();
+        int blue = getRandomComponentOfColor();
 
-        int red = random.nextInt(range) + minimumValue;
-        int green = random.nextInt(range) + minimumValue;
-        int blue = random.nextInt(range) + minimumValue;
+        return (blue) | (green << 8) | (red << 16) | (0XFF << 24);
+    }
 
-        return (blue) | (green << 8) | (red << 16) | (alpha << 24);
+    private int getRandomComponentOfColor() {
+        return random.nextInt(MAX_COLOR - MIN_COLOR) + MIN_COLOR;
     }
 
     private void generateRandomCooperators(long population) {
@@ -313,9 +315,6 @@ public class GroupSelectionSimulator {
     private void reproduceAllGroups() {
         getDistinctGroups().forEach(groupNo -> {
             List<Integer> emptyPositionList = getEmptyPositionForNewIndividuals(groupNo);
-            if (emptyPositionList.isEmpty()) {
-                return;
-            }
             Collections.shuffle(emptyPositionList);
 
             for (Integer position : emptyPositionList) {
@@ -344,23 +343,31 @@ public class GroupSelectionSimulator {
     }
 
     private boolean canCooperate(Integer groupNo) {
-        Integer lowestCost = getGroup(groupNo)
-                .filter(individual -> IndividualType.COOPERATOR.equals(individual.getType()))
-                .mapToInt(Individual::getCosts)
-                .min()
-                .getAsInt();
+        Integer lowestCost = getLowestCost(groupNo);
         long totalCosts = lowestCost * (getGroupSize(groupNo) - 1);
         if (totalCosts == 0) {
             return true;
         }
-        long benefits = getGroup(groupNo)
-                .filter(individual -> IndividualType.COOPERATOR.equals(individual.getType()))
-                .mapToInt(Individual::getCosts)
-                .sum();
+        long benefits = getSumOfCosts(groupNo);
         double ratio = BENEFIT_COSTS_COEFFICIENT * (benefits - lowestCost) / totalCosts;
         double criticalPoint = (double) getGroupSize(groupNo) / getDistinctGroups().count() + 1;
 
         return ratio > criticalPoint;
+    }
+
+    private int getLowestCost(Integer groupNo) {
+        return getGroup(groupNo)
+                .filter(individual -> IndividualType.COOPERATOR.equals(individual.getType()))
+                .mapToInt(Individual::getCosts)
+                .min()
+                .orElse(0);
+    }
+
+    private int getSumOfCosts(Integer groupNo) {
+        return getGroup(groupNo)
+                .filter(individual -> IndividualType.COOPERATOR.equals(individual.getType()))
+                .mapToInt(Individual::getCosts)
+                .sum();
     }
 
     private int getRandomCosts() {
@@ -375,11 +382,10 @@ public class GroupSelectionSimulator {
     }
 
     private List<Integer> getEmptyPositionForNewIndividuals(Integer groupNo) {
-        List<Integer> positionList = new ArrayList<>();
-        getGroup(groupNo).map(Individual::getPosition)
-                .forEach(position -> positionList.addAll(getNeighboursPosition(position, GROUP_RANGE)));
-
-        return positionList.stream().distinct().collect(Collectors.toList());
+        return getGroup(groupNo).map(Individual::getPosition)
+                .flatMap(position -> getNeighboursPosition(position, GROUP_RANGE).stream())
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     public long countAllIndividuals(IndividualType type) {
