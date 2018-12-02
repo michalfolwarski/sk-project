@@ -229,14 +229,14 @@ public class MainController implements Initializable {
     }
 
     private void updateStatusBar() {
-        long cooperators = simulator.countIndividuals(IndividualType.COOPERATOR);
-        long defectors = simulator.countIndividuals(IndividualType.DEFECTOR);
+        long cooperators = simulator.countAllIndividuals(IndividualType.COOPERATOR);
+        long defectors = simulator.countAllIndividuals(IndividualType.DEFECTOR);
         long total = cooperators + defectors;
-        long groups = simulator.countGroups();
+        long groups = simulator.countAllGroups();
 
         String statusMessage = String.format(
-                "Total Population: %-5d Cooperators: %-5d Defectors: %-5d Groups: %-5d Cycle: %-5d",
-                total, cooperators, defectors, groups, simulator.getCycle());
+                "Total Population: %-5d Cooperators: %-5d Defectors: %-5d Ratio: %-5.1f Groups: %-5d Cycle: %-5d",
+                total, cooperators, defectors, 100.0 * cooperators / total, groups, simulator.getCycle());
 
         System.out.println(statusMessage);
         Platform.runLater(() -> statusBar.setText(statusMessage));

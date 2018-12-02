@@ -31,13 +31,13 @@
             <Label text="Probability of split the group [%]" GridPane.columnIndex="3" GridPane.rowIndex="2"/>
             <Spinner fx:id="initialPopulation" GridPane.columnIndex="1">
                 <valueFactory>
-                    <SpinnerValueFactory.IntegerSpinnerValueFactory amountToStepBy="1" initialValue="30" max="100"
-                                                                    min="1"/>
+                    <SpinnerValueFactory.IntegerSpinnerValueFactory amountToStepBy="5" initialValue="100" max="100"
+                                                                    min="20"/>
                 </valueFactory>
             </Spinner>
             <Spinner fx:id="defectors" GridPane.columnIndex="1" GridPane.rowIndex="1">
                 <valueFactory>
-                    <SpinnerValueFactory.IntegerSpinnerValueFactory amountToStepBy="1" initialValue="50" max="100"
+                    <SpinnerValueFactory.IntegerSpinnerValueFactory amountToStepBy="5" initialValue="10" max="100"
                                                                     min="0"/>
                 </valueFactory>
             </Spinner>
@@ -49,13 +49,13 @@
             </Spinner>
             <Spinner fx:id="maxNumberOfGroups" GridPane.columnIndex="4">
                 <valueFactory>
-                    <SpinnerValueFactory.IntegerSpinnerValueFactory amountToStepBy="1" initialValue="10" max="1000"
+                    <SpinnerValueFactory.IntegerSpinnerValueFactory amountToStepBy="1" initialValue="10" max="500"
                                                                     min="3"/>
                 </valueFactory>
             </Spinner>
             <Spinner fx:id="maxPopulationPerGroup" GridPane.columnIndex="4" GridPane.rowIndex="1">
                 <valueFactory>
-                    <SpinnerValueFactory.IntegerSpinnerValueFactory amountToStepBy="1" initialValue="30" max="1000"
+                    <SpinnerValueFactory.IntegerSpinnerValueFactory amountToStepBy="1" initialValue="30" max="500"
                                                                     min="3"/>
                 </valueFactory>
             </Spinner>
@@ -68,7 +68,7 @@
 
             <Button fx:id="resetButton" mnemonicParsing="false" onAction="#reset"
                     text="Reset" GridPane.columnSpan="2" GridPane.rowIndex="4"/>
-            <Button fx:id="runButton" disable="true" mnemonicParsing="false" onAction="#run" text="Run"
+            <Button fx:id="runButton" disable="true" mnemonicParsing="false" onAction="#run" text="Start"
                     GridPane.columnIndex="3" GridPane.columnSpan="2" GridPane.halignment="RIGHT" GridPane.rowIndex="4"/>
             <BorderPane.margin>
                 <Insets left="10.0" right="10.0" top="10.0" bottom="10"/>

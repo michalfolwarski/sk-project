@@ -11,9 +11,9 @@ public class GroupSelectionSimulator {
     private static final int LEADERS_RANGE = 3;
     private static final int INDIVIDUAL_RANGE = 2;
     private static final int GROUP_RANGE = 1;
-    private static final int REPRODUCE_RANGE = 1;
-    private static final int REPRODUCTION_RATIO = 3;
     private static final int MINIMUM_GROUP_SIZE = 3;
+    private static final int MAX_COST = 10;
+    private static final double BENEFIT_COSTS_COEFFICIENT = 1.0;
 
     private List<Optional<Individual>> individuals = new ArrayList<>();
     private Random random = new Random();
@@ -67,8 +67,8 @@ public class GroupSelectionSimulator {
         generateRandomGroupLeaders(numberOfGroups);
 
         long initPopulation =
-                percentOfInitPopulation * numberOfGroups * maxPopulationPerGroup / 100 - countGroups();
-        long numberOfDefectors = (initPopulation + countGroups()) * percentOfDefectors / 100;
+                percentOfInitPopulation * numberOfGroups * maxPopulationPerGroup / 100 - countAllGroups();
+        long numberOfDefectors = (initPopulation + countAllGroups()) * percentOfDefectors / 100;
 
         generateRandomCooperators(initPopulation);
         chooseRandomDefectors(numberOfDefectors);
@@ -82,7 +82,7 @@ public class GroupSelectionSimulator {
                     || !getNearestNeighboursIn(position, LEADERS_RANGE).isEmpty()) {
                 i--;
             } else {
-                Individual newIndividual = new Individual(lastGroupNumber++, position);
+                Individual newIndividual = new Individual(lastGroupNumber++, position, getRandomCosts());
                 individuals.set(position, Optional.of(newIndividual));
                 colorsOfGroup.put(i, getRandomColor());
             }
@@ -123,7 +123,8 @@ public class GroupSelectionSimulator {
                 i--;
                 continue;
             }
-            individuals.set(position, Optional.of(new Individual(neighbours.get(0).getGroup(), position)));
+            Individual newIndividual = new Individual(neighbours.get(0).getGroup(), position, getRandomCosts());
+            individuals.set(position, Optional.of(newIndividual));
         }
     }
 
@@ -156,6 +157,7 @@ public class GroupSelectionSimulator {
 
             if (IndividualType.COOPERATOR.equals(randomIndividual.getType())) {
                 randomIndividual.setType(IndividualType.DEFECTOR);
+                randomIndividual.setCosts(0);
             } else {
                 i--;
             }
@@ -170,16 +172,19 @@ public class GroupSelectionSimulator {
     public void nextStep() {
         cycle++;
         selectAndTrySplitGroups();
-        reproduceGroups();
+        reproduceAllGroups();
+        if (getDistinctGroups().count() > maxNumberOfGroups) {
+            killRandomGroup();
+        }
     }
 
     private void selectAndTrySplitGroups() {
-        getDistinctGroup()
+        getDistinctGroups()
                 .filter(groupNo -> getGroupSize(groupNo) >= maxPopulationPerGroup)
                 .forEach(this::tryToSplitGroup);
     }
 
-    private Stream<Integer> getDistinctGroup() {
+    private Stream<Integer> getDistinctGroups() {
         return getAllIndividuals()
                 .map(Individual::getGroup)
                 .distinct();
@@ -191,9 +196,8 @@ public class GroupSelectionSimulator {
         }
         if (random.nextDouble() < chanceToSplittingGroup) {
             double chanceToKillingGroup = 0.5;
-            if (getDistinctGroup().count() > 2
-                    && (getDistinctGroup().count() >= maxNumberOfGroups
-                    || random.nextDouble() < chanceToKillingGroup)) {
+            if (getDistinctGroups().count() >= maxNumberOfGroups
+                    || random.nextDouble() < chanceToKillingGroup) {
                 killRandomGroupExceptFor(groupNo);
             }
             splitGroup(groupNo);
@@ -203,23 +207,22 @@ public class GroupSelectionSimulator {
     }
 
     private void killRandomGroupExceptFor(Integer exceptGroup) {
-        List<Integer> groupList = getDistinctGroup().collect(Collectors.toList());
+        List<Integer> groupList = getDistinctGroups()
+                .filter(group -> !group.equals(exceptGroup))
+                .collect(Collectors.toList());
         if (groupList.size() <= 2) {
             return;
         }
-        for (; ; ) {
-            int index = random.nextInt(groupList.size());
-            if (groupList.get(index).equals(exceptGroup)) {
-                continue;
-            }
-            removeGroup(groupList.get(index));
-            break;
-        }
+        int index = random.nextInt(groupList.size());
+        removeGroup(groupList.get(index));
+    }
+
+    private void killRandomGroup() {
+        getDistinctGroups().findAny().ifPresent(this::removeGroup);
     }
 
     private void removeGroup(int groupNo) {
-        getGroup(groupNo)
-                .forEach(individual -> individuals.set(individual.getPosition(), Optional.empty()));
+        getGroup(groupNo).forEach(individual -> individuals.set(individual.getPosition(), Optional.empty()));
         removeColorOfGroup(groupNo);
     }
 
@@ -281,7 +284,7 @@ public class GroupSelectionSimulator {
             List<Individual> neighbours = getNearestNeighboursIn(individual.getPosition(), INDIVIDUAL_RANGE);
 
             if (countNeighboursGroups(neighbours) <= 2
-                    && countNeighboursGroup(neighbours, newGroup) >= 1) {
+                    && countNeighboursGroups(neighbours, newGroup) >= 1) {
                 moveToGroup(individual.getPosition(), newGroup);
                 hasSomeoneChangedPosition.set(true);
             }
@@ -289,7 +292,7 @@ public class GroupSelectionSimulator {
         return hasSomeoneChangedPosition.get();
     }
 
-    private long countNeighboursGroup(List<Individual> neighbours, int groupNo) {
+    private long countNeighboursGroups(List<Individual> neighbours, int groupNo) {
         return neighbours.stream()
                 .filter(individual1 -> individual1.getGroup() == groupNo)
                 .distinct()
@@ -307,49 +310,68 @@ public class GroupSelectionSimulator {
         individuals.set(position, Optional.empty());
     }
 
-    private void reproduceGroups() {
-        //todo add costs to individuals and change the reproduction model
-        getDistinctGroup().forEach(groupNo -> {
+    private void reproduceAllGroups() {
+        getDistinctGroups().forEach(groupNo -> {
             List<Integer> emptyPositionList = getEmptyPositionForNewIndividuals(groupNo);
             if (emptyPositionList.isEmpty()) {
                 return;
             }
-            Set<Integer> checkedPositions = new HashSet<>();
-            for (int i = 0; i < emptyPositionList.size(); i++) {
-                if (emptyPositionList.size() == checkedPositions.size()) {
-                    break;
-                }
-                int index = random.nextInt(emptyPositionList.size());
-                checkedPositions.add(index);
+            Collections.shuffle(emptyPositionList);
 
-                Integer position = emptyPositionList.get(index);
-                List<Individual> neighbours = getNearestNeighboursIn(position, INDIVIDUAL_RANGE);
-                if (countNeighboursGroups(neighbours) == 1) {
-                    long cooperators = countIndividualsInGroup(groupNo, IndividualType.COOPERATOR);
-                    long defectors = countIndividualsInGroup(groupNo, IndividualType.DEFECTOR);
-                    int numberOfNeighbours = getNearestNeighboursIn(position, REPRODUCE_RANGE).size();
-
-                    IndividualType type;
-                    if (cooperators == 0) {
-                        type = IndividualType.DEFECTOR;
-                    } else if (defectors == 0) {
-                        type = IndividualType.COOPERATOR;
-                    } else if (numberOfNeighbours >= REPRODUCTION_RATIO) {
-                        type = IndividualType.DEFECTOR;
-                    } else {
-                        type = IndividualType.COOPERATOR;
-                    }
-
-                    Individual newIndividual = new Individual(groupNo, position, type);
-                    individuals.set(position, Optional.of(newIndividual));
+            for (Integer position : emptyPositionList) {
+                if (createOffspring(groupNo, position)) {
                     break;
                 }
             }
         });
     }
 
-    private long countIndividualsInGroup(Integer groupNo, IndividualType type) {
-        return getGroup(groupNo).filter(t -> t.getType().equals(type)).count();
+    private boolean createOffspring(Integer groupNo, Integer position) {
+        List<Individual> neighbours = getNearestNeighboursIn(position, INDIVIDUAL_RANGE);
+        if (countNeighboursGroups(neighbours) == 1) {
+            long cooperators = countCooperators(groupNo);
+            IndividualType type = IndividualType.DEFECTOR;
+            int costs = 0;
+            if (cooperators > 0 && canCooperate(groupNo)) {
+                type = IndividualType.COOPERATOR;
+                costs = getRandomCosts();
+            }
+            Individual newIndividual = new Individual(groupNo, position, costs, type);
+            individuals.set(position, Optional.of(newIndividual));
+            return true;
+        }
+        return false;
+    }
+
+    private boolean canCooperate(Integer groupNo) {
+        Integer lowestCost = getGroup(groupNo)
+                .filter(individual -> IndividualType.COOPERATOR.equals(individual.getType()))
+                .mapToInt(Individual::getCosts)
+                .min()
+                .getAsInt();
+        long totalCosts = lowestCost * (getGroupSize(groupNo) - 1);
+        if (totalCosts == 0) {
+            return true;
+        }
+        long benefits = getGroup(groupNo)
+                .filter(individual -> IndividualType.COOPERATOR.equals(individual.getType()))
+                .mapToInt(Individual::getCosts)
+                .sum();
+        double ratio = BENEFIT_COSTS_COEFFICIENT * (benefits - lowestCost) / totalCosts;
+        double criticalPoint = (double) getGroupSize(groupNo) / getDistinctGroups().count() + 1;
+
+        return ratio > criticalPoint;
+    }
+
+    private int getRandomCosts() {
+        return random.nextInt(MAX_COST) + 1;
+    }
+
+    private long countCooperators(Integer groupNo) {
+        return getGroup(groupNo)
+                .map(Individual::getType)
+                .filter(IndividualType.COOPERATOR::equals)
+                .count();
     }
 
     private List<Integer> getEmptyPositionForNewIndividuals(Integer groupNo) {
@@ -360,15 +382,15 @@ public class GroupSelectionSimulator {
         return positionList.stream().distinct().collect(Collectors.toList());
     }
 
-    public long countIndividuals(IndividualType type) {
+    public long countAllIndividuals(IndividualType type) {
         return getAllIndividuals()
                 .map(Individual::getType)
                 .filter(type::equals)
                 .count();
     }
 
-    public long countGroups() {
-        return getDistinctGroup().count();
+    public long countAllGroups() {
+        return getDistinctGroups().count();
     }
 
     public Optional<Individual> getIndividual(int i) {
