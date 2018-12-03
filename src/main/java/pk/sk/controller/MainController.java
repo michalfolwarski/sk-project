@@ -217,7 +217,7 @@ public class MainController implements Initializable {
     }
 
     private void refreshViews() {
-        refreshImage();
+        Platform.runLater(this::refreshImage);
 
         long cooperators = simulator.countAllIndividuals(IndividualType.COOPERATOR);
         long defectors = simulator.countAllIndividuals(IndividualType.DEFECTOR);
@@ -225,7 +225,7 @@ public class MainController implements Initializable {
         long groups = simulator.countAllGroups();
         long cycle = simulator.getCycle();
 
-        refreshStatusBar(cooperators, defectors, total, groups, cycle);
+        Platform.runLater(() -> refreshStatusBar(cooperators, defectors, total, groups, cycle));
         Platform.runLater(() -> refreshLineChart(cooperators, defectors, total, cycle));
     }
 

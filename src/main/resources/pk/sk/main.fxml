@@ -57,9 +57,9 @@
                                                                     min="3"/>
                 </valueFactory>
             </Spinner>
-            <Spinner fx:id="probabilityOfSplittingGroup" GridPane.columnIndex="7">
+            <Spinner fx:id="probabilityOfSplittingGroup" GridPane.columnIndex="7" editable="true">
                 <valueFactory>
-                    <SpinnerValueFactory.DoubleSpinnerValueFactory amountToStepBy="0.1" initialValue="0.3" max="100"
+                    <SpinnerValueFactory.DoubleSpinnerValueFactory amountToStepBy="0.01" initialValue="0.11" max="100"
                                                                    min="0"/>
                 </valueFactory>
             </Spinner>
@@ -69,7 +69,7 @@
                                                                     min="0"/>
                 </valueFactory>
             </Spinner>
-            <CheckBox fx:id="randomInitialNumberOfGroups" selected="true" text="Random no. of Groups"
+            <CheckBox fx:id="randomInitialNumberOfGroups" text="Random initial no. of Groups"
                       GridPane.columnIndex="9"/>
             <CheckBox fx:id="animatedChart" selected="true" text="Animated Graph" GridPane.columnIndex="9"
                       GridPane.rowIndex="1"/>

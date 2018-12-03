@@ -16,6 +16,7 @@ public class GroupSelectionSimulator {
     private static final double BENEFIT_COSTS_COEFFICIENT = 1.0;
     private static final int MAX_COLOR = 236;
     private static final int MIN_COLOR = 76;
+    private static final int WATCH_DOG_TICKS = 500;
 
     private List<Optional<Individual>> individuals = new ArrayList<>();
     private Random random = new Random();
@@ -112,7 +113,11 @@ public class GroupSelectionSimulator {
 
     private void generateRandomCooperators(long population) {
         int range = WIDTH * HEIGHT;
+        int watchDog = WATCH_DOG_TICKS;
         for (int i = 0; i < population; i++) {
+            if (watchDog-- == 0) {
+                break;
+            }
             int position = random.nextInt(range);
             if (individuals.get(position).isPresent()) {
                 i--;
@@ -125,6 +130,7 @@ public class GroupSelectionSimulator {
                 i--;
                 continue;
             }
+            watchDog = WATCH_DOG_TICKS;
             Individual newIndividual = new Individual(neighbours.get(0).getGroup(), position, getRandomCosts());
             individuals.set(position, Optional.of(newIndividual));
         }
