@@ -35,6 +35,10 @@ public class MainController implements Initializable {
     private XYChart.Series<Number, Number> cooperatorsSeries;
     private XYChart.Series<Number, Number> totalPopulationSeries;
     @FXML
+    private CheckBox animatedChart;
+    @FXML
+    private CheckBox randomInitialNumberOfGroups;
+    @FXML
     private ScrollPane scrollPane;
     @FXML
     private LineChart<Number, Number> lineChart;
@@ -189,6 +193,9 @@ public class MainController implements Initializable {
 
         maxPopulationPerGroup.valueProperty().addListener(o ->
                 simulator.setMaxPopulationPerGroup(maxPopulationPerGroup.getValue()));
+
+        animatedChart.selectedProperty().addListener((observableValue, oldValue, newValue) ->
+                lineChart.setAnimated(newValue));
     }
 
     public void reset() {
@@ -200,7 +207,7 @@ public class MainController implements Initializable {
         clearLineChartSeries();
         refreshViews();
         runButton.setDisable(false);
-        lineChart.setAnimated(true);
+        lineChart.setAnimated(animatedChart.isSelected());
     }
 
     private void clearLineChartSeries() {
@@ -223,8 +230,11 @@ public class MainController implements Initializable {
     }
 
     private int getInitialNumberOfGroups() {
-        int min = Math.max(maxNumberOfGroups.getValue() / 2, 3);
-        return min + new Random().nextInt(maxNumberOfGroups.getValue() - min + 1);
+        if (randomInitialNumberOfGroups.isSelected()) {
+            int min = Math.max(maxNumberOfGroups.getValue() / 2, 3);
+            return min + new Random().nextInt(maxNumberOfGroups.getValue() - min + 1);
+        }
+        return maxNumberOfGroups.getValue();
     }
 
     private void setupLineChart() {
@@ -261,6 +271,7 @@ public class MainController implements Initializable {
         initialPopulation.setDisable(isRunning);
         defectors.setDisable(isRunning);
         resetButton.setDisable(isRunning);
+        randomInitialNumberOfGroups.setDisable(isRunning);
     }
 
     private void startSimulation() {
