@@ -1,15 +1,18 @@
 package pk.sk.controller;
 
 import javafx.application.Platform;
-import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.HBox;
 import pk.sk.model.GroupSelectionSimulator;
 import pk.sk.model.IndividualType;
 
@@ -24,14 +27,19 @@ public class MainController implements Initializable {
     private static final int DEFECTORS_PIXEL = 0xFF000000; // black
 
     private static boolean isRunning = false;
-
     private GroupSelectionSimulator simulator = new GroupSelectionSimulator();
     private DoubleProperty zoomProperty = new SimpleDoubleProperty();
     private BufferedImage outputImage;
     private int[] pixels = new int[]{};
-
+    private XYChart.Series<Number, Number> defectorsSeries;
+    private XYChart.Series<Number, Number> cooperatorsSeries;
+    private XYChart.Series<Number, Number> totalPopulationSeries;
     @FXML
-    public ScrollPane scrollPane;
+    private ScrollPane scrollPane;
+    @FXML
+    private LineChart<Number, Number> lineChart;
+    @FXML
+    private HBox hbox;
     @FXML
     private Button resetButton;
     @FXML
@@ -125,7 +133,8 @@ public class MainController implements Initializable {
         pixels = outputImage.getRGB(0, 0, width, height, null, 0, width);
 
         createEventListeners();
-        zoomProperty.set(450);
+        zoomProperty.set(500);
+        setupLineChart();
         reset();
     }
 
@@ -160,13 +169,15 @@ public class MainController implements Initializable {
     }
 
     private void createResizeListener() {
-        InvalidationListener invalidationListener = observable -> {
-            double min = Math.min(scrollPane.getWidth(), scrollPane.getHeight());
-            zoomProperty.setValue(min - 2);
+        ChangeListener<Number> hBoxChangeListener = (observableValue, oldValue, newValue) -> {
+            double height = hbox.getHeight();
+            double width = hbox.getWidth();
+            scrollPane.setPrefWidth(height);
+            zoomProperty.setValue(height - 2);
+            lineChart.setPrefWidth(width - height - 4);
         };
-
-        scrollPane.heightProperty().addListener(invalidationListener);
-        scrollPane.widthProperty().addListener(invalidationListener);
+        hbox.heightProperty().addListener(hBoxChangeListener);
+        hbox.widthProperty().addListener(hBoxChangeListener);
     }
 
     private void createFieldsListener() {
@@ -182,15 +193,54 @@ public class MainController implements Initializable {
 
     public void reset() {
         System.out.println("Cleanups...");
-        int min = Math.max(maxNumberOfGroups.getValue() / 2, 3);
-        int numberOfGroups = min + new Random().nextInt(maxNumberOfGroups.getValue() - min + 1);
-
-        simulator.initNewSimulation(numberOfGroups,
+        simulator.initNewSimulation(getInitialNumberOfGroups(),
                 initialPopulation.getValue(),
                 defectors.getValue());
-        refreshImage();
-        updateStatusBar();
+        lineChart.setAnimated(false);
+        clearLineChartSeries();
+        refreshViews();
         runButton.setDisable(false);
+        lineChart.setAnimated(true);
+    }
+
+    private void clearLineChartSeries() {
+        totalPopulationSeries.getData().clear();
+        cooperatorsSeries.getData().clear();
+        defectorsSeries.getData().clear();
+    }
+
+    private void refreshViews() {
+        refreshImage();
+
+        long cooperators = simulator.countAllIndividuals(IndividualType.COOPERATOR);
+        long defectors = simulator.countAllIndividuals(IndividualType.DEFECTOR);
+        long total = cooperators + defectors;
+        long groups = simulator.countAllGroups();
+        long cycle = simulator.getCycle();
+
+        refreshStatusBar(cooperators, defectors, total, groups, cycle);
+        Platform.runLater(() -> refreshLineChart(cooperators, defectors, total, cycle));
+    }
+
+    private int getInitialNumberOfGroups() {
+        int min = Math.max(maxNumberOfGroups.getValue() / 2, 3);
+        return min + new Random().nextInt(maxNumberOfGroups.getValue() - min + 1);
+    }
+
+    private void setupLineChart() {
+        lineChart.getData().clear();
+
+        cooperatorsSeries = new XYChart.Series<>();
+        cooperatorsSeries.setName("No.of Cooperators");
+        lineChart.getData().add(cooperatorsSeries);
+
+        defectorsSeries = new XYChart.Series<>();
+        defectorsSeries.setName("No.of Defectors");
+        lineChart.getData().add(defectorsSeries);
+
+        totalPopulationSeries = new XYChart.Series<>();
+        totalPopulationSeries.setName("Population Size");
+        lineChart.getData().add(totalPopulationSeries);
     }
 
     public void run() {
@@ -217,8 +267,7 @@ public class MainController implements Initializable {
         new Thread(() -> {
             while (isRunning) {
                 simulator.nextStep();
-                refreshImage();
-                updateStatusBar();
+                refreshViews();
                 try {
                     Thread.sleep(delay.getValue() + 1);
                 } catch (InterruptedException e) {
@@ -228,18 +277,19 @@ public class MainController implements Initializable {
         }).start();
     }
 
-    private void updateStatusBar() {
-        long cooperators = simulator.countAllIndividuals(IndividualType.COOPERATOR);
-        long defectors = simulator.countAllIndividuals(IndividualType.DEFECTOR);
-        long total = cooperators + defectors;
-        long groups = simulator.countAllGroups();
-
+    private void refreshStatusBar(long cooperators, long defectors, long total, long groups, long cycle) {
         String statusMessage = String.format(
                 "Total Population: %-5d Cooperators: %-5d Defectors: %-5d Ratio: %-5.1f Groups: %-5d Cycle: %-5d",
-                total, cooperators, defectors, 100.0 * cooperators / total, groups, simulator.getCycle());
+                total, cooperators, defectors, 100.0 * cooperators / total, groups, cycle);
 
         System.out.println(statusMessage);
         Platform.runLater(() -> statusBar.setText(statusMessage));
+    }
+
+    private void refreshLineChart(long cooperators, long defectors, long total, long cycle) {
+        cooperatorsSeries.getData().add(new XYChart.Data<>(cycle, cooperators));
+        defectorsSeries.getData().add(new XYChart.Data<>(cycle, defectors));
+        totalPopulationSeries.getData().add(new XYChart.Data<>(cycle, total));
     }
 
     private boolean isInputValid() {
