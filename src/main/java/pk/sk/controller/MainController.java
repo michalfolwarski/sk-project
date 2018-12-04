@@ -137,7 +137,6 @@ public class MainController implements Initializable {
         pixels = outputImage.getRGB(0, 0, width, height, null, 0, width);
 
         createEventListeners();
-        zoomProperty.set(500);
         setupLineChart();
         reset();
     }
@@ -203,7 +202,6 @@ public class MainController implements Initializable {
         simulator.initNewSimulation(getInitialNumberOfGroups(),
                 initialPopulation.getValue(),
                 defectors.getValue());
-        lineChart.setAnimated(false);
         clearLineChartSeries();
         refreshViews();
         runButton.setDisable(false);
@@ -211,6 +209,7 @@ public class MainController implements Initializable {
     }
 
     private void clearLineChartSeries() {
+        lineChart.setAnimated(false);
         totalPopulationSeries.getData().clear();
         cooperatorsSeries.getData().clear();
         defectorsSeries.getData().clear();
@@ -240,17 +239,17 @@ public class MainController implements Initializable {
     private void setupLineChart() {
         lineChart.getData().clear();
 
-        cooperatorsSeries = new XYChart.Series<>();
-        cooperatorsSeries.setName("No.of Cooperators");
-        lineChart.getData().add(cooperatorsSeries);
+        totalPopulationSeries = new XYChart.Series<>();
+        totalPopulationSeries.setName("Population Size");
+        lineChart.getData().add(totalPopulationSeries);
 
         defectorsSeries = new XYChart.Series<>();
         defectorsSeries.setName("No.of Defectors");
         lineChart.getData().add(defectorsSeries);
 
-        totalPopulationSeries = new XYChart.Series<>();
-        totalPopulationSeries.setName("Population Size");
-        lineChart.getData().add(totalPopulationSeries);
+        cooperatorsSeries = new XYChart.Series<>();
+        cooperatorsSeries.setName("No.of Cooperators");
+        lineChart.getData().add(cooperatorsSeries);
     }
 
     public void run() {
@@ -290,11 +289,11 @@ public class MainController implements Initializable {
 
     private void refreshStatusBar(long cooperators, long defectors, long total, long groups, long cycle) {
         String statusMessage = String.format(
-                "Total Population: %-5d Cooperators: %-5d Defectors: %-5d Ratio: %-5.1f Groups: %-5d Cycle: %-5d",
-                total, cooperators, defectors, 100.0 * cooperators / total, groups, cycle);
+                " Total Population: %-6d Cooperators: %-6d Defectors: %-6d Groups: %-6d Cycle: %-6d",
+                total, cooperators, defectors, groups, cycle);
 
         System.out.println(statusMessage);
-        Platform.runLater(() -> statusBar.setText(statusMessage));
+        statusBar.setText(statusMessage);
     }
 
     private void refreshLineChart(long cooperators, long defectors, long total, long cycle) {

@@ -6,7 +6,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" minWidth="1190" xmlns="http://javafx.com/javafx/8.0.172-ea"
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" minWidth="1300" xmlns="http://javafx.com/javafx/8.0.172-ea"
             fx:controller="pk.sk.controller.MainController">
     <top>
         <GridPane>
@@ -20,7 +20,7 @@
                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="230.0" minWidth="150.0"/>
                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="80.0" minWidth="50.0"/>
                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="40.0" minWidth="10.0"/>
-                <ColumnConstraints hgrow="SOMETIMES" maxWidth="200.0" minWidth="150.0"/>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="230.0" minWidth="150.0"/>
                 <ColumnConstraints hgrow="SOMETIMES" minWidth="60.0"/>
             </columnConstraints>
             <rowConstraints>
@@ -79,7 +79,7 @@
                     text="Start"
                     GridPane.columnIndex="10" GridPane.halignment="RIGHT" GridPane.rowIndex="1"/>
             <BorderPane.margin>
-                <Insets bottom="5.0" left="5.0" right="5.0" top="10.0"/>
+                <Insets bottom="10.0" left="5.0" right="5.0" top="5.0"/>
             </BorderPane.margin>
         </GridPane>
     </top>
@@ -104,12 +104,12 @@
         </HBox>
     </center>
     <bottom>
-        <HBox>
+        <VBox>
             <BorderPane.margin>
-                <Insets bottom="5.0" left="5.0" right="5.0" top="10"/>
+                <Insets bottom="5.0" top="5.0"/>
             </BorderPane.margin>
-            <Label fx:id="statusBar" text="Loading...">
-            </Label>
-        </HBox>
+            <Separator/>
+            <Label fx:id="statusBar" text="Loading..."/>
+        </VBox>
     </bottom>
 </BorderPane>

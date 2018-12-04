@@ -14,8 +14,8 @@ public class GroupSelectionSimulator {
     private static final int MINIMUM_GROUP_SIZE = 3;
     private static final int MAX_COST = 10;
     private static final double BENEFIT_COSTS_COEFFICIENT = 1.0;
-    private static final int MAX_COLOR = 236;
-    private static final int MIN_COLOR = 76;
+    private static final int MAX_COLOR = 224;
+    private static final int MIN_COLOR = 80;
     private static final int WATCH_DOG_TICKS = 500;
 
     private List<Optional<Individual>> individuals = new ArrayList<>();
@@ -116,6 +116,8 @@ public class GroupSelectionSimulator {
         int watchDog = WATCH_DOG_TICKS;
         for (int i = 0; i < population; i++) {
             if (watchDog-- == 0) {
+                System.err.println("WatchDog can not hold it anymore! (created population: "
+                        + (i + lastGroupNumber) + " of " + (population + lastGroupNumber) + ")");
                 break;
             }
             int position = random.nextInt(range);
