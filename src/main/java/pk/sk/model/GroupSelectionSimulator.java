@@ -12,7 +12,8 @@ public class GroupSelectionSimulator {
     private static final int INDIVIDUAL_RANGE = 2;
     private static final int GROUP_RANGE = 1;
     private static final int MINIMUM_GROUP_SIZE = 3;
-    private static final int MAX_COST = 10;
+    private static final int MAX_COST = 30;
+    private static final int MIN_COST = 3;
     private static final double BENEFIT_COSTS_COEFFICIENT = 1.0;
     private static final int MAX_COLOR = 224;
     private static final int MIN_COLOR = 80;
@@ -71,9 +72,9 @@ public class GroupSelectionSimulator {
 
         long initPopulation =
                 percentOfInitPopulation * numberOfGroups * maxPopulationPerGroup / 100 - countAllGroups();
-        long numberOfDefectors = (initPopulation + countAllGroups()) * percentOfDefectors / 100;
-
         generateRandomCooperators(initPopulation);
+
+        long numberOfDefectors = getAllIndividuals().count() * percentOfDefectors / 100;
         chooseRandomDefectors(numberOfDefectors);
     }
 
@@ -379,7 +380,7 @@ public class GroupSelectionSimulator {
     }
 
     private int getRandomCosts() {
-        return random.nextInt(MAX_COST) + 1;
+        return random.nextInt(MAX_COST - MIN_COST) + MIN_COST;
     }
 
     private long countCooperators(Integer groupNo) {

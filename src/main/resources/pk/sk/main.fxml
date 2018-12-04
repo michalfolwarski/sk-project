@@ -59,7 +59,7 @@
             </Spinner>
             <Spinner fx:id="probabilityOfSplittingGroup" GridPane.columnIndex="7" editable="true">
                 <valueFactory>
-                    <SpinnerValueFactory.DoubleSpinnerValueFactory amountToStepBy="0.01" initialValue="0.11" max="100"
+                    <SpinnerValueFactory.DoubleSpinnerValueFactory amountToStepBy="0.01" initialValue="0.8" max="100"
                                                                    min="0"/>
                 </valueFactory>
             </Spinner>
