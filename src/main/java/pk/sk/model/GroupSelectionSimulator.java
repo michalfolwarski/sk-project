@@ -14,7 +14,6 @@ public class GroupSelectionSimulator {
     private static final int MINIMUM_GROUP_SIZE = 3;
     private static final int MAX_COST = 30;
     private static final int MIN_COST = 3;
-    private static final double BENEFIT_COSTS_COEFFICIENT = 1.0;
     private static final int MAX_COLOR = 224;
     private static final int MIN_COLOR = 80;
     private static final int WATCH_DOG_TICKS = 500;
@@ -358,8 +357,8 @@ public class GroupSelectionSimulator {
             return true;
         }
         long benefits = getSumOfCosts(groupNo);
-        double ratio = BENEFIT_COSTS_COEFFICIENT * (benefits - lowestCost) / totalCosts;
-        double criticalPoint = (double) getGroupSize(groupNo) / getDistinctGroups().count() + 1;
+        double ratio = (double) (benefits - lowestCost) / totalCosts;
+        double criticalPoint = (double) maxPopulationPerGroup / getDistinctGroups().count() + 1;
 
         return ratio > criticalPoint;
     }
